@@ -16,7 +16,7 @@
 #'
 #' @examples
 #' data(exampleBoundary)
-#' outPath = file.path(tempdir(), "flightplan.csv")
+#' outPath = tempfile(fileext=".csv")
 #' generateLitchiPlan(ogrROI = exampleBoundary,
 #'                    outputPath = outPath,
 #'                    uav = "p3",
