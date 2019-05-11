@@ -3,7 +3,8 @@
 #'
 #' @rdname generateLitchiPlan
 #'
-#' @param ogrROI range of interest loaded as a OGR layer
+#' @param ogrROI range of interest loaded as a OGR layer, must be in
+#' a metric units projection for working properly
 #' @param outputPath output path for the csv file
 #' @param uav either "p3" or "p4adv" for loading Phantom 3-4std or Phanton4-adv/pro
 #' camera profiles, default "p3"
