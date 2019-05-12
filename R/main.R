@@ -98,6 +98,7 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   # returns in inconsistent order though needs to be
   # done in a for loop
   lineList = matrix(ncol=2, nrow=0)
+  isEnd = c()
   for (i in 1:(nLines+1)) {
     pt = i*2-1
     lineCoords = waypoints[pt:(pt+1),]
@@ -107,17 +108,20 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
       for (l in inter@lines[[1]]@Lines) {
         l2 = sp::SpatialLines(list(sp::Lines(list(l), ID=1)))
         LiLength = rgeos::gLength(l2)
-        if (LiLength > maxWaypointsDistance) {
-          splitNum = ceiling(LiLength/maxWaypointsDistance)+1
+        if (LiLength > maxFlightDist) {
+          splitNum = ceiling(LiLength/maxFlightDist)+1
           splitLocations = seq(0, LiLength, length.out = splitNum)
           interpolates = rgeos::gInterpolate(l2, splitLocations)
           inter = rgeos::readWKT(paste("LINESTRING(", paste(apply(interpolates@coords, 1, paste, collapse=" "), collapse=", "), ")", sep=""))
           for (l3 in inter@lines[[1]]@Lines) {
             lineList = append(lineList, t(l3@coords))
+            isEnd = append(isEnd, rep(FALSE, nrow(l3@coords)))
           }
         } else {
           lineList = append(lineList, t(l@coords))
+          isEnd = append(isEnd, rep(FALSE, nrow(l@coords)))
         }
+        isEnd[length(isEnd)] = TRUE
       }
     }
   }
@@ -155,7 +159,7 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
-  dfLitchi$photo_timeinterval[seq(1,nWaypoints, 2)] = params$photoInterval
+  dfLitchi$photo_timeinterval[!isEnd] = params$photoInterval
   dfLitchi$gimbalpitchangle = gimbalPitchAngle
   write.csv(dfLitchi, outputPath, row.names = FALSE)
 }
