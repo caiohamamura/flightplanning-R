@@ -1,7 +1,7 @@
 Package: flightplanning
 Type: Package
 Title: UAV Flight Planning
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: person("Caio", "Hamamura", email = "caiohamamura@gmail.com", role = c("aut", "cre"))
 Description: Utility functions for helping and generating flight plans for Litchi.
 Imports:

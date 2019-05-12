@@ -4,7 +4,7 @@
 \alias{generateLitchiPlan}
 \title{Function to generate Litchi csv flight plan}
 \usage{
-generateLitchiPlan(ogrROI, outputPath, uav = "p3", GSD = 5,
+generateLitchiPlan(ogrROI, outputPath, uav = "p3", GSD = 4,
   flightSpeedKmH = 30, overlapWidth = 0.8, overlapHeight = 0.8,
   gimbalPitchAngle = -90, flightLinesAngle = -1,
   maxWaypointsDistance = 2000)

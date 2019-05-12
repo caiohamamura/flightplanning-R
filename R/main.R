@@ -37,7 +37,7 @@
 #' @importFrom graphics text
 #' @importFrom utils data read.csv write.csv
 generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
-                              GSD = 5, flightSpeedKmH = 30,
+                              GSD = 4, flightSpeedKmH = 30,
                               overlapWidth = 0.8, overlapHeight = 0.8,
                               gimbalPitchAngle = -90, flightLinesAngle = -1,
                               maxWaypointsDistance = 2000) {
