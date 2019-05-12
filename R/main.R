@@ -15,7 +15,7 @@
 #' @param gimbalPitchAngle gimbal angle for taking photos, default -90 (can be overriden at flight time)
 #' @param flightLinesAngle angle for the flight lines, default -1 (auto set based on larger dimensions)
 #' @param maxWaypointsDistance maximum distance between waypoints in meters,
-#' default 2000 (it has been reported >2km will give problems)
+#' default 2000 (some issues have been reported with distances > 2km)
 #'
 #' @examples
 #' data(exampleBoundary)
