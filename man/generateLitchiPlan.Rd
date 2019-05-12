@@ -10,7 +10,7 @@ generateLitchiPlan(ogrROI, outputPath, uav = "p3", GSD = 4,
   maxWaypointsDistance = 2000)
 }
 \arguments{
-\item{ogrROI}{range of interest loaded as a OGR layer, must be in
+\item{ogrROI}{range of interest loaded as an OGR layer, must be in
 a metric units projection for working properly}
 
 \item{outputPath}{output path for the csv file}
@@ -31,7 +31,7 @@ camera profiles, default "p3"}
 \item{flightLinesAngle}{angle for the flight lines, default -1 (auto set based on larger dimensions)}
 
 \item{maxWaypointsDistance}{maximum distance between waypoints in meters,
-default 2000 (it has been reported >2km will give problems)}
+default 2000 (some issues have been reported with distances > 2km)}
 }
 \description{
 Function to generate Litchi csv flight plan
