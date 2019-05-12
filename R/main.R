@@ -14,6 +14,8 @@
 #' @param overlapHeight desired height overlap between photos, defualt 0.8
 #' @param gimbalPitchAngle gimbal angle for taking photos, default -90 (can be overriden at flight time)
 #' @param flightLinesAngle angle for the flight lines, default -1 (auto set based on larger dimensions)
+#' @param maxWaypointsDistance maximum distance between waypoints in meters,
+#' default 2000 (it has been reported >2km will give problems)
 #'
 #' @examples
 #' data(exampleBoundary)
@@ -26,7 +28,8 @@
 #'                    overlapWidth = 0.8,
 #'                    overlapHeight = 0.8,
 #'                    gimbalPitchAngle = -90,
-#'                    flightLinesAngle = -1)
+#'                    flightLinesAngle = -1,
+#'                    maxWaypointsDistance = 2000)
 #'
 #'
 #' @export
@@ -36,7 +39,8 @@
 generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
                               GSD = 5, flightSpeedKmH = 30,
                               overlapWidth = 0.8, overlapHeight = 0.8,
-                              gimbalPitchAngle = -90, flightLinesAngle = -1) {
+                              gimbalPitchAngle = -90, flightLinesAngle = -1,
+                              maxWaypointsDistance = 2000) {
   params = flightParameters(
     uav = uav,
     GSD = GSD,
@@ -83,13 +87,13 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
 
   xys = data.frame(x=-xWidths*sin(rads)+yHeights*cos(rads), y=xWidths*cos(rads)+yHeights*sin(rads))
 
-  waypoints = xys + rep(centroid, each=nrow(xys))
   # Initial waypoints to intersect waypoints
-  lineList = matrix(ncol=2, nrow=0)
+  waypoints = xys + rep(centroid, each=nrow(xys))
 
   # For some reason gIntersection with MULTILINESTRING
   # returns in inconsistent order though needs to be
   # done in a for loop
+  lineList = matrix(ncol=2, nrow=0)
   for (i in 1:(nLines+1)) {
     pt = i*2-1
     lineCoords = waypoints[pt:(pt+1),]
@@ -97,7 +101,19 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
     inter = rgeos::gIntersection(ogrROI, Li)
     if (!is.null(inter)) {
       for (l in inter@lines[[1]]@Lines) {
-        lineList = append(lineList, t(l@coords))
+        l2 = sp::SpatialLines(list(sp::Lines(list(l), ID=1)))
+        LiLength = rgeos::gLength(l2)
+        if (LiLength > maxWaypointsDistance) {
+          splitNum = ceiling(LiLength/maxWaypointsDistance)+1
+          splitLocations = seq(0, LiLength, length.out = splitNum)
+          interpolates = rgeos::gInterpolate(l2, splitLocations)
+          inter = rgeos::readWKT(paste("LINESTRING(", paste(apply(interpolates@coords, 1, paste, collapse=" "), collapse=", "), ")", sep=""))
+          for (l3 in inter@lines[[1]]@Lines) {
+            lineList = append(lineList, t(l3@coords))
+          }
+        } else {
+          lineList = append(lineList, t(l@coords))
+        }
       }
     }
   }

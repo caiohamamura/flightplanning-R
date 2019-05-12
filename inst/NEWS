@@ -1,0 +1,5 @@
+This is a new package created to plot the Radar-Boxplot. This is a in progress work, which will soon be published.
+
+Changelog:
+0.2.3: Fixed documentation issues by decorating methos with @rdname radarBoxplot
+0.2.2: Fixed to avoid warnings and errors while R CMD check, except for over documenting
