@@ -1,5 +1,6 @@
 This is a package created to assist in flight planning
 
 Changelog:
-0.2.0:
+0.2.1: check if ogrROI is a valid polygon
+0.2.0: split flight lines greater than a limit
 0.1.0: initial release

@@ -3,7 +3,7 @@
 #'
 #' @rdname generateLitchiPlan
 #'
-#' @param ogrROI range of interest loaded as a OGR layer, must be in
+#' @param ogrROI range of interest loaded as an OGR layer, must be in
 #' a metric units projection for working properly
 #' @param outputPath output path for the csv file
 #' @param uav either "p3" or "p4adv" for loading Phantom 3-4std or Phanton4-adv/pro
@@ -41,6 +41,10 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
                               overlapWidth = 0.8, overlapHeight = 0.8,
                               gimbalPitchAngle = -90, flightLinesAngle = -1,
                               maxWaypointsDistance = 2000) {
+  if (summary(ogrROI)[2] != "SpatialPolygonsDataFrame")
+    stop("ogrROI is not a valid polygon layer")
+  if (!grep("units=m", as.character(ogrROI@proj4string@projargs)))
+    stop("ogrROI is not in a metric projection")
   params = flightParameters(
     uav = uav,
     GSD = GSD,
