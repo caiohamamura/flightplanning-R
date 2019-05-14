@@ -41,10 +41,14 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
                               overlapWidth = 0.8, overlapHeight = 0.8,
                               gimbalPitchAngle = -90, flightLinesAngle = -1,
                               maxWaypointsDistance = 2000) {
+
+  # Check parameters
   if (summary(ogrROI)[2] != "SpatialPolygonsDataFrame")
     stop("ogrROI is not a valid polygon layer")
   if (!grep("units=m", as.character(ogrROI@proj4string@projargs)))
     stop("ogrROI is not in a metric projection")
+
+  # Parameters calculated from UAV
   params = flightParameters(
     uav = uav,
     GSD = GSD,
@@ -56,87 +60,122 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   groundHeight = params$groundHeight
   groundHeightOverlap = groundHeight*overlapHeight
   flightLineDistance = params$flightLineDistance
-
   vertices = ogrROI@polygons[[1]]@Polygons[[1]]@coords
-  minBbox = getMinBBox(vertices)
+
+  # Get bounding box parameters
+  if (flightLinesAngle != -1) {
+    minBbox = getBBoxAngle(vertices, flightLinesAngle)
+  } else {
+    # if angle not specified use minimum possible bounding box
+    minBbox = getMinBBox(vertices)
+  }
   width = minBbox$width
   height = minBbox$height
   alpha = minBbox$angle
-  if (flightLinesAngle != -1) {
-    alpha = flightLinesAngle
-  }
   rads=alpha*pi/180
+  centroid = apply(minBbox$pts, 2, mean)
 
-  # install.packages("rgeos")
-  # library(rgeos)
-  pol = sp::Polygon(rbind(minBbox$pts, minBbox$pts[1,]))@coords
-  polDef=paste(apply(pol, 1, paste, collapse=" "), collapse=", ")
-  minBboxGeos = rgeos::readWKT(paste("POLYGON((", polDef, "))", sep=""))
-  centroid = rgeos::gCentroid(minBboxGeos)@coords
-
-  if (flightLinesAngle != -1) {
-    height = width
-  }
-  nLines = ceiling(height / flightLineDistance)+1
+  # Calculate points offset from centroid
+  # based on angle and width/height offsets
+  # width offsets (between flightlines)
+  nLines = ceiling(width / flightLineDistance) + 1
   xWidths = (-nLines/2):(nLines/2) * flightLineDistance
   xWidths = rep(xWidths, each=2)
 
+  # heights offset (one for upper half
+  #                 one for lower half)
   heightDistance = groundHeight-groundHeightOverlap
-  heightAdjusted = width + 2*heightDistance
+  heightAdjusted = height + 2*heightDistance
+  # Put offset to avoid intersection issues
+  heightAdjusted = heightAdjusted + heightDistance*2
   heightMHalf = -heightAdjusted/2
   heightPHalf = heightAdjusted/2
   yHeights = c(heightMHalf, heightPHalf)
+  # Interleave one upper, two bottom
+  # two upper, two bottom... until end
   yHeights = c(rep(c(yHeights, rev(yHeights)), nLines/2+1))
   yHeights = yHeights[1:length(xWidths)]
 
-  xys = data.frame(x=-xWidths*sin(rads)+yHeights*cos(rads), y=xWidths*cos(rads)+yHeights*sin(rads))
+  # Calculate translated x and y from
+  # angles and offsets from centroid
+  xys = data.frame(
+                   x = -xWidths  * sin(rads) +
+                        yHeights * cos(rads),
+                   y = xWidths   * cos(rads) +
+                       yHeights  * sin(rads))
 
   # Initial waypoints to intersect waypoints
   waypoints = xys + rep(centroid, each=nrow(xys))
 
+  #################################################
+  # Intersect each flight line from bounding box
+  # to match actual ROI
+  #################################################
   # For some reason gIntersection with MULTILINESTRING
-  # returns in inconsistent order though needs to be
-  # done in a for loop
-  lineList = matrix(ncol=2, nrow=0)
-  isEnd = c()
-  for (i in 1:(nLines+1)) {
-    pt = i*2-1
-    lineCoords = waypoints[pt:(pt+1),]
-    Li = rgeos::readWKT(paste("LINESTRING(",paste(apply(lineCoords, 1, paste, collapse=" "), collapse=", "), ")", sep=""), p4s = ogrROI@proj4string)
-    inter = rgeos::gIntersection(ogrROI, Li)
-    if (!is.null(inter)) {
-      for (l in inter@lines[[1]]@Lines) {
-        l2 = sp::SpatialLines(list(sp::Lines(list(l), ID=1)))
-        LiLength = rgeos::gLength(l2)
-        if (LiLength > maxFlightDist) {
-          splitNum = ceiling(LiLength/maxFlightDist)+1
-          splitLocations = seq(0, LiLength, length.out = splitNum)
-          interpolates = rgeos::gInterpolate(l2, splitLocations)
-          inter = rgeos::readWKT(paste("LINESTRING(", paste(apply(interpolates@coords, 1, paste, collapse=" "), collapse=", "), ")", sep=""))
-          for (l3 in inter@lines[[1]]@Lines) {
-            lineList = append(lineList, t(l3@coords))
-            isEnd = append(isEnd, rep(FALSE, nrow(l3@coords)))
-          }
-        } else {
-          lineList = append(lineList, t(l@coords))
-          isEnd = append(isEnd, rep(FALSE, nrow(l@coords)))
-        }
-        isEnd[length(isEnd)] = TRUE
-      }
-    }
-  }
-  waypoints = matrix(lineList, ncol=2, byrow=T)
+  # will return linestrings in inconsistent order
+  # though it will be done in a for loop
 
+  #
+  #
+  wktLines = paste(apply(waypoints, 1, paste, collapse=" "), collapse=", ")
+  wktLines = paste("LINESTRING(", wktLines,")")
+  gLines = rgeos::readWKT(wktLines, p4s = ogrROI@proj4string)
+  inter = rgeos::gIntersection(rgeos::gBuffer(ogrROI, width = flightLineDistance), gLines)
+  nLines = length(inter@lines[[1]]@Lines)
+
+  flightLines = t(sapply(inter@lines[[1]]@Lines, function(x) x@coords))
+  flightLines = flightLines[,c(1,3,2,4)]
+
+
+  waypoints = matrix(nrow=nLines * 2, ncol=2)
+  waypoints[seq(1, nLines*2, 2),] = flightLines[, 1:2]
+  waypoints[seq(2, nLines*2, 2),] = flightLines[, 3:4]
+
+
+  curvedPoints = outerCurvePoints(waypoints = waypoints,
+                  angle = alpha,
+                  flightLineDistance = flightLineDistance)
+  waypoints2 = waypoints
+
+  adjustedCurves = adjustAcuteAngles(xy = curvedPoints,
+                   angle = alpha,
+                   minAngle = 40)
 
   # Waypoints
   wgs84 = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+  wptsMatrix = as.data.frame(matrix(nrow=nrow(wpts)+nrow(adjustedCurves),ncol=4))
+  colnames(wptsMatrix) = colnames=c("x", "y", "isCurve", "takePhoto")
+  mat_pos = 1
+  for (i in seq_len(nrow(waypoints))) {
+    curve = as.vector(adjustedCurves[as.character(i),])
+    hasCurve = !anyNA(curve)
+    if (hasCurve) {
+      if (curve$before) {
+        wptsMatrix[mat_pos,] = c(curve[,1:2], TRUE, FALSE)
+        mat_pos = mat_pos + 1
+        wptsMatrix[mat_pos,] = c(waypoints[i, 1:2], FALSE, i %% 2 == 1)
+        mat_pos = mat_pos + 1
+      } else {
+        wptsMatrix[mat_pos,] = c(waypoints[i, 1:2], FALSE, i %% 2 == 1)
+        mat_pos = mat_pos + 1
+        wptsMatrix[mat_pos,] = cbind(curve[,1:2], TRUE, FALSE)
+        mat_pos = mat_pos + 1
+      }
+    } else {
+      wptsMatrix[mat_pos,] = c(waypoints[i, 1:2], FALSE, i %% 2 == 1)
+      mat_pos = mat_pos + 1
+    }
+  }
+  waypoints = wptsMatrix
+
+
   transform = rgdal::rawTransform(ogrROI@proj4string@projargs, wgs84, n=nrow(waypoints), x=waypoints[,1], y=waypoints[,2])
   lats = transform[[2]]
   lngs = transform[[1]]
-  sp::plot(ogrROI)
-  graphics::lines(waypoints, lty=2)
-  graphics::points(waypoints)
-  graphics::text(waypoints[,1], waypoints[,2], seq_len(length(lats)), pos=3)
+  graphics::plot(waypoints[,1:2])
+  graphics::polygon(ogrROI@polygons[[1]]@Polygons[[1]]@coords)
+  graphics::lines(waypoints[,1:2], lty=2)
+  graphics::text(waypoints[,1], waypoints[,2], seq_along(waypoints[,1]), pos=3)
 
 
   # Calculate heading
@@ -159,11 +198,34 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
-  dfLitchi$photo_timeinterval[!isEnd] = params$photoInterval
+  dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
+  dfLitchi$photo_timeinterval[waypoints$takePhoto==1] = params$photoInterval
   dfLitchi$gimbalpitchangle = gimbalPitchAngle
-  write.csv(dfLitchi, outputPath, row.names = FALSE)
-}
 
+  # Split if too long
+  finalSize = nrow(dfLitchi)
+  maxSize = 100
+  if (finalSize > maxSize) {
+    indexes = seq_len(finalSize)
+    nBreaks = ceiling(finalSize/maxSize)
+    breaks = seq(1, finalSize, length.out = nBreaks+1)[c(-1, -nBreaks-1)]
+    endWaypoints = indexes[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
+    selected = sapply(breaks, function(x) which.min(abs(endWaypoints-x)))
+    waypointsBreak = endWaypoints[selected]
+
+
+    dfLitchi$split = rep(1:nBreaks, diff(c(0, waypointsBreak, finalSize)))
+    splits=split.data.frame(waypoints, f = dfLitchi$split)
+    for (dataSplit in split.data.frame(dfLitchi, f = dfLitchi$split)) {
+      first = substr(outputPath, 1, nchar(outputPath)-4)
+      second = substr(outputPath, nchar(outputPath)-3, nchar(outputPath))
+      outputPath2 = paste(first, dataSplit[1, ]$split, second, sep = "")
+      write.csv(dataSplit[,-ncol(dataSplit)], outputPath2, row.names = FALSE)
+    }
+  } else {
+    write.csv(dfLitchi, outputPath, row.names = FALSE)
+  }
+}
 
 
 p3 = list(sensorWD = 6.17,
