@@ -16,6 +16,8 @@
 #' @param flightLinesAngle angle for the flight lines, default -1 (auto set based on larger dimensions)
 #' @param maxWaypointsDistance maximum distance between waypoints in meters,
 #' default 2000 (some issues have been reported with distances > 2km)
+#' @param maxFlightTime maximum flight time. If mission is greater than the estimated
+#' time, it will be splitted into smaller missions.
 #'
 #' @examples
 #' data(exampleBoundary)
@@ -29,7 +31,8 @@
 #'                    overlapHeight = 0.8,
 #'                    gimbalPitchAngle = -90,
 #'                    flightLinesAngle = -1,
-#'                    maxWaypointsDistance = 2000)
+#'                    maxWaypointsDistance = 2000,
+#'                    maxFlightTime = 15)
 #'
 #'
 #' @export
@@ -40,10 +43,11 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
                               GSD = 4, flightSpeedKmH = 30,
                               overlapWidth = 0.8, overlapHeight = 0.8,
                               gimbalPitchAngle = -90, flightLinesAngle = -1,
-                              maxWaypointsDistance = 2000) {
+                              maxWaypointsDistance = 2000,
+                              maxFlightTime = 15) {
 
   # Check parameters
-  if (summary(ogrROI)[2] != "SpatialPolygonsDataFrame")
+  if (class(ogrROI)[1] != "SpatialPolygonsDataFrame")
     stop("ogrROI is not a valid polygon layer")
   if (!grep("units=m", as.character(ogrROI@proj4string@projargs)))
     stop("ogrROI is not in a metric projection")
@@ -131,19 +135,19 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   waypoints[seq(1, nLines*2, 2),] = flightLines[, 1:2]
   waypoints[seq(2, nLines*2, 2),] = flightLines[, 3:4]
 
-
+  # Calculate curves points to allow smooth curves
   curvedPoints = outerCurvePoints(waypoints = waypoints,
                   angle = alpha,
                   flightLineDistance = flightLineDistance)
-  waypoints2 = waypoints
 
+  # Adjust curve points position to avoid acute angles
   adjustedCurves = adjustAcuteAngles(xy = curvedPoints,
                    angle = alpha,
-                   minAngle = 40)
+                   minAngle = 80)
 
-  # Waypoints
+  # Concatenate regular waypoints with curve waypoints
   wgs84 = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-  wptsMatrix = as.data.frame(matrix(nrow=nrow(wpts)+nrow(adjustedCurves),ncol=4))
+  wptsMatrix = as.data.frame(matrix(nrow=nrow(waypoints)+nrow(adjustedCurves),ncol=4))
   colnames(wptsMatrix) = colnames=c("x", "y", "isCurve", "takePhoto")
   mat_pos = 1
   for (i in seq_len(nrow(waypoints))) {
@@ -168,7 +172,7 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   }
   waypoints = wptsMatrix
 
-
+  # Transform to WGS84 latitude and longitude
   transform = rgdal::rawTransform(ogrROI@proj4string@projargs, wgs84, n=nrow(waypoints), x=waypoints[,1], y=waypoints[,2])
   lats = transform[[2]]
   lngs = transform[[1]]
@@ -186,10 +190,7 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   finalHeading = 270-headDegree
   finalHeading[lngDiff > 0] = 90-headDegree[lngDiff > 0]
 
-  #
-  # dfLitchi=read.csv("litchi.csv", header=TRUE)
-  # dfLitchi$gimbalpitchangle = -90
-  # write.csv(dfLitchi, "litchi.csv", row.names=FALSE)
+  # Set parameters of the flight in the CSV
   dfLitchi = flightplanning::litchi
   dfLitchi = dfLitchi[rep(1, length(lats)),]
   dfLitchi$latitude = lats
@@ -202,16 +203,21 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   dfLitchi$photo_timeinterval[waypoints$takePhoto==1] = params$photoInterval
   dfLitchi$gimbalpitchangle = gimbalPitchAngle
 
-  # Split if too long
+
+  # Split the flight if is too long
+  dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
+  distAcum = c(0,cumsum(dists))
+  flightTime = distAcum / (flightSpeedMs*0.75) / 60
   finalSize = nrow(dfLitchi)
-  maxSize = 100
-  if (finalSize > maxSize) {
+  totalFlightTime = flightTime[finalSize]
+  if (totalFlightTime > maxFlightTime) {
     indexes = seq_len(finalSize)
-    nBreaks = ceiling(finalSize/maxSize)
-    breaks = seq(1, finalSize, length.out = nBreaks+1)[c(-1, -nBreaks-1)]
-    endWaypoints = indexes[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
+    nBreaks = ceiling(totalFlightTime/maxFlightTime)
+    breaks = seq(0, flightTime[finalSize], length.out = nBreaks+1)[c(-1, -nBreaks-1)]
+    endWaypointsIndex = indexes[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
+    endWaypoints = flightTime[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
     selected = sapply(breaks, function(x) which.min(abs(endWaypoints-x)))
-    waypointsBreak = endWaypoints[selected]
+    waypointsBreak = endWaypointsIndex[indexes[selected]]
 
 
     dfLitchi$split = rep(1:nBreaks, diff(c(0, waypointsBreak, finalSize)))
@@ -225,6 +231,15 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   } else {
     write.csv(dfLitchi, outputPath, row.names = FALSE)
   }
+
+  cat("#####################\n")
+  cat("## Camera settings ## \n")
+  cat("#####################\n")
+  cat("Min shutter speed: ")
+  cat(params$minimumShutterSpeed)
+  cat("\nPhoto interval: ")
+  cat(params$photoInterval)
+  cat('\n')
 }
 
 

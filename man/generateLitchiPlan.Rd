@@ -7,7 +7,7 @@
 generateLitchiPlan(ogrROI, outputPath, uav = "p3", GSD = 4,
   flightSpeedKmH = 30, overlapWidth = 0.8, overlapHeight = 0.8,
   gimbalPitchAngle = -90, flightLinesAngle = -1,
-  maxWaypointsDistance = 2000)
+  maxWaypointsDistance = 2000, maxFlightTime = 15)
 }
 \arguments{
 \item{ogrROI}{range of interest loaded as an OGR layer, must be in
@@ -32,6 +32,9 @@ camera profiles, default "p3"}
 
 \item{maxWaypointsDistance}{maximum distance between waypoints in meters,
 default 2000 (some issues have been reported with distances > 2km)}
+
+\item{maxFlightTime}{maximum flight time. If mission is greater than the estimated
+time, it will be splitted into smaller missions.}
 }
 \description{
 Function to generate Litchi csv flight plan
@@ -48,7 +51,8 @@ generateLitchiPlan(ogrROI = exampleBoundary,
                    overlapHeight = 0.8,
                    gimbalPitchAngle = -90,
                    flightLinesAngle = -1,
-                   maxWaypointsDistance = 2000)
+                   maxWaypointsDistance = 2000,
+                   maxFlightTime = 15)
 
 
 }

@@ -1,7 +1,12 @@
 #' Rotating calipers algorithm
 #'
 #' @description
-#' credits go to Daniel Wollschlaeger <https://github.com/ramnathv>
+#' Calculates the minimum oriented bounding box using the
+#' rotating claipers algorithm.
+#' Credits go to Daniel Wollschlaeger <https://github.com/ramnathv>
+#'
+#' @param xy A matrix of xy values from which to calculate the minimum oriented
+#' bounding box.
 #'
 #' @importFrom grDevices chull
 getMinBBox <- function(xy) {
@@ -67,7 +72,7 @@ getMinBBox <- function(xy) {
   return(list(pts=pts, width=heights[eMin], height=widths[eMin], angle=deg))
 }
 
-
+#' Provided an angle, calculate the corresponding minimum bounding box
 #' @importFrom grDevices chull
 getBBoxAngle = function(vertices, alpha) {
   centroid = apply(vertices, 2, mean)
@@ -97,14 +102,11 @@ getBBoxAngle = function(vertices, alpha) {
                    cos(-angleRadians) * (bBox[, 2] - centroid[2]) +
                    centroid[2]
   unrotatedBbox = cbind(bBoxUnrotatedX, bBoxUnrotatedY)
-  # plot(unrotatedBbox, pch=3)
-  # polygon(unrotatedBbox)
-  # points(vertices)
-  # polygon(minBbox$pts, border='yellow', lty='dashed')
   list(angle=alpha, height=height, width=width, pts=unrotatedBbox)
 }
 
-
+#' Given a xy matrix of points, adjust the
+#' points to avoid acute angles < 80 degrees
 adjustAcuteAngles = function(xy, angle, minAngle) {
   xy_mat = as.matrix(xy[,1:2])
   rads = angle*pi/180
@@ -152,6 +154,7 @@ adjustAcuteAngles = function(xy, angle, minAngle) {
   return(xy)
 }
 
+#' Create outer curves for the flight lines
 outerCurvePoints = function(waypoints, angle, flightLineDistance) {
   mask = getAngles(waypoints) == 180
   mask[is.na(mask)] = TRUE
@@ -183,6 +186,8 @@ outerCurvePoints = function(waypoints, angle, flightLineDistance) {
   return(curvePoints)
 }
 
+#' Get angles for each point considering
+#' the two neighbors points
 getAngles = function(waypoints) {
   nPoints = nrow(waypoints)
   vectors = waypoints[-1,]-waypoints[-nPoints,]

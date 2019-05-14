@@ -1,6 +1,9 @@
 This is a package created to assist in flight planning
 
 Changelog:
+0.5.0: Break the flight into smaller missions given maximum flight time
+0.4.0: Reposition curves to avoid acute angles
+0.3.0: Creates curves for flightlines
 0.2.2: photo_timeinterval to 0 when is end of flightline
 0.2.1: check if ogrROI is a valid polygon
 0.2.0: split flight lines greater than a limit
