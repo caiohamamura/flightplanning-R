@@ -1,3 +1,5 @@
+MIN_PHOTO_INTERVAL = 2
+
 #'  Function to generate Litchi csv flight plan
 #'
 #'
@@ -8,16 +10,18 @@
 #' @param outputPath output path for the csv file
 #' @param uav either "p3" or "p4adv" for loading Phantom 3-4std or Phanton4-adv/pro
 #' camera profiles, default "p3"
-#' @param GSD target ground resolution in centimeters, default 4
-#' @param flightSpeedKmH flight speed in km/h, default 30
-#' @param overlapWidth desired width overlap between photos, default 0.8
-#' @param overlapHeight desired height overlap between photos, defualt 0.8
+#' @param GSD target ground resolution in centimeters, must specify either GSD or flightHeight, default NA
+#' @param flightHeight flight height in meters, default NA
+#' @param flightSpeedKmH flight speed in km/h, default 54
+#' @param sideOverlap desired width overlap between photos, default 0.8
+#' @param frontOverlap desired height overlap between photos, defualt 0.8
 #' @param gimbalPitchAngle gimbal angle for taking photos, default -90 (can be overriden at flight time)
 #' @param flightLinesAngle angle for the flight lines, default -1 (auto set based on larger dimensions)
 #' @param maxWaypointsDistance maximum distance between waypoints in meters,
 #' default 2000 (some issues have been reported with distances > 2km)
 #' @param maxFlightTime maximum flight time. If mission is greater than the estimated
 #' time, it will be splitted into smaller missions.
+#' @param startingPoint numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
 #'
 #' @examples
 #' data(exampleBoundary)
@@ -27,8 +31,8 @@
 #'                    uav = "p3",
 #'                    GSD = 4.325,
 #'                    flightSpeedKmH = 30,
-#'                    overlapWidth = 0.8,
-#'                    overlapHeight = 0.8,
+#'                    sideOverlap = 0.8,
+#'                    frontOverlap = 0.8,
 #'                    gimbalPitchAngle = -90,
 #'                    flightLinesAngle = -1,
 #'                    maxWaypointsDistance = 2000,
@@ -39,13 +43,13 @@
 #' @import sp rgeos rgdal
 #' @importFrom graphics text
 #' @importFrom utils data read.csv write.csv
-generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
-                              GSD = 4, flightSpeedKmH = 30,
-                              overlapWidth = 0.8, overlapHeight = 0.8,
-                              gimbalPitchAngle = -90, flightLinesAngle = -1,
-                              maxWaypointsDistance = 2000,
-                              maxFlightTime = 15) {
-
+generateLitchiPlan = function(ogrROI, outputPath, sensorWidth = 6.17,
+                              focalLength35=20, aspectRatio = "4:3",
+                              imageWidthPx = 4000, GSD = NA, flightHeight = NA,
+                              flightSpeedKmH = 54, sideOverlap = 0.8,
+                              frontOverlap = 0.8, gimbalPitchAngle = -90,
+                              flightLinesAngle = -1, maxWaypointsDistance = 2000,
+                              maxFlightTime = 15, startingPoint = 1) {
   # Check parameters
   if (class(ogrROI)[1] != "SpatialPolygonsDataFrame")
     stop("ogrROI is not a valid polygon layer")
@@ -54,15 +58,22 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
 
   # Parameters calculated from UAV
   params = flightParameters(
-    uav = uav,
+    sensorWidth = sensorWidth,
+    focalLength35 = focalLength35,
+    aspectRatio = aspectRatio,
+    imageWidthPx = imageWidthPx,
     GSD = GSD,
-    overlapWidth = overlapWidth,
-    overlapHeight = overlapHeight,
-    flightSpeedKmH = flightSpeedKmH
+    sideOverlap = sideOverlap,
+    frontOverlap = frontOverlap,
+    flightSpeedKmH = flightSpeedKmH,
+    flightHeight = flightHeight
   )
+
+  flightSpeedKmH = params$flightSpeedKmH
   flightSpeedMs = flightSpeedKmH / 3.6
+  flightHeight = params$flightHeight
   groundHeight = params$groundHeight
-  groundHeightOverlap = groundHeight*overlapHeight
+  groundHeightOverlap = groundHeight*frontOverlap
   flightLineDistance = params$flightLineDistance
   vertices = ogrROI@polygons[[1]]@Polygons[[1]]@coords
 
@@ -76,7 +87,7 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   width = minBbox$width
   height = minBbox$height
   alpha = minBbox$angle
-  rads=alpha*pi/180
+  rads = alpha*pi/180
   centroid = apply(minBbox$pts, 2, mean)
 
   # Calculate points offset from centroid
@@ -99,6 +110,17 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   # two upper, two bottom... until end
   yHeights = c(rep(c(yHeights, rev(yHeights)), nLines/2+1))
   yHeights = yHeights[1:length(xWidths)]
+
+  # Switch position of the first point
+  if (startingPoint == 2) {
+    yHeights = rev(yHeights)
+  } else if (startingPoint == 3) {
+    xWidths = rev(xWidths)
+    yHeights = rev(yHeights)
+  } else if (startingPoint == 4) {
+    xWidths = rev(xWidths)
+  }
+
 
   # Calculate translated x and y from
   # angles and offsets from centroid
@@ -201,6 +223,8 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
   dfLitchi$photo_timeinterval[waypoints$takePhoto==1] = params$photoInterval
+  dfLitchi$actiontype1[waypoints$takePhoto==1] = 1
+  dfLitchi$actiontype1[waypoints$takePhoto==0 & waypoints$isCurve==0] = 1
   dfLitchi$gimbalpitchangle = gimbalPitchAngle
 
 
@@ -233,12 +257,18 @@ generateLitchiPlan = function(ogrROI, outputPath, uav = "p3",
   }
 
   cat("#####################\n")
-  cat("## Camera settings ## \n")
+  cat("## Flight settings ## \n")
   cat("#####################\n")
   cat("Min shutter speed: ")
   cat(params$minimumShutterSpeed)
-  cat("\nPhoto interval: ")
+  cat("\nPhoto interval:    ")
   cat(params$photoInterval)
+  cat(" s")
+  cat("\nFlight speed:      ")
+  cat(params$flightSpeedKmH)
+  cat(" km/h")
+  cat("\nFlight line angle: ")
+  cat(alpha)
   cat('\n')
 }
 
@@ -259,48 +289,58 @@ p4adv = list(sensorWD = 13.2,
 #'
 #' @rdname flightParameters
 #'
-#' @param uav either "p3" or "p4adv" for loading Phantom 3-4std or Phanton4-adv/pro
-#' camera profiles
+#' @param sensorWidth numeric. Camera sensor width in milimeters, default 6.17
+#' @param focalLength35 numeric. Camera focal length 35mm equivalent, default 20
+#' @param aspectRatio character. Aspect ratio of the picture, default "4:3"
+#' @param imageWidth numeric. Width of the image in number of pixels, default 4000
 #' @param GSD target ground resolution in centimeters
 #' @param flightSpeedKmH flight speed in km/h
-#' @param overlapWidth desired width overlap between photos
-#' @param overlapHeight desired height overlap between photos
+#' @param sideOverlap desired width overlap between photos
+#' @param frontOverlap desired height overlap between photos
 #'
 #' @examples
 #' params = flightParameters(
 #'   GSD=4.325,
 #'   flightSpeedKmH=30,
-#'   overlapWidth = 0.8,
-#'   overlapHeight = 0.8
+#'   sideOverlap = 0.8,
+#'   frontOverlap = 0.8
 #'  )
 #'
 #' @export
 flightParameters = function(
-  uav="p3",
+  sensorWidth = 6.17,
+  focalLength35 = 20,
+  aspectRatio = "4:3",
+  imageWidthPx = 4000,
   GSD = 4,
-  overlapWidth = 0.8,
-  overlapHeight = 0.8,
-  flightSpeedKmH = 30) {
+  sideOverlap = 0.8,
+  frontOverlap = 0.8,
+  flightSpeedKmH = NA,
+  flightHeight = NA) {
 
-  uavModel = p3
-
-  if (uav == "p4adv") {
-    uavModel = p4adv
+  if (is.na(GSD) && is.na(flightHeight)) {
+    stop("You must specify either GSD or flightHeight!")
   }
 
   # Size factor to divide
   ratio = 3/4
   sizeFactor = 34.6
-  if (uavModel$aspectRatio == "3:2") {
+  if (aspectRatio == "3:2") {
     sizeFactor = 36.0
     ratio = 2/3
   }
 
-  realFocalLength = (uavModel$sensorWD * uavModel$focalLength35) / sizeFactor
-  groundWidth = uavModel$imageWidthPx * GSD / 100
+  realFocalLength = (sensorWidth * focalLength35) / sizeFactor
+  if (is.na(GSD)) {
+    GSD = flightHeight * sensorWidth*100 / realFocalLength / imageWidthPx
+    groundWidth = imageWidthPx * GSD / 100
+  } else {
+    groundWidth = imageWidthPx * GSD / 100
+    flightHeight = (groundWidth / sensorWidth) * realFocalLength
+  }
 
-  flightHeight = (groundWidth / uavModel$sensorWD) * realFocalLength
-  flightLineDistance = groundWidth - overlapWidth * groundWidth
+
+  flightLineDistance = groundWidth - sideOverlap * groundWidth
 
   flightSpeedMs = flightSpeedKmH / 3.6
   speedPxPerSecond = flightSpeedMs / (GSD*0.01)
@@ -309,26 +349,43 @@ flightParameters = function(
   # Planos de Voo Semiautônomos para Fotogrametria
   # com Aeronaves Remotamente Pilotadas de Classe 3
   maxPixelRoll = 1.2
-  minimumShutterSpeed = paste("1:",round(speedPxPerSecond/maxPixelRoll), sep="")
+  minimumShutterSpeed = paste("1/",round(speedPxPerSecond/maxPixelRoll), sep="")
 
   groundHeight = groundWidth * ratio
-  groundHeightOverlap = groundHeight * overlapHeight
+  groundHeightOverlap = groundHeight * frontOverlap
   groundAllowedOffset = groundHeight - groundHeightOverlap
   photoInterval = groundAllowedOffset / flightSpeedMs
+  if (photoInterval < MIN_PHOTO_INTERVAL) {
+    photoInterval = 2
+    flightSpeedMs = groundAllowedOffset / photoInterval
+    flightSpeedKmH = flightSpeedMs*3.6
+    warning(paste0("Speed had to be lowered because frequency of photos would be too high
+  New speed: ", flightSpeedKmH, "km/h"))
+  } else if ((photoInterval %% 1) > 1e-4) {
+    photoInterval = ceiling(photoInterval)
+    flightSpeedMs = groundAllowedOffset / photoInterval
+    flightSpeedKmH = flightSpeedMs*3.6
+    cat(paste0("Speed lowered to ", flightSpeedKmH, "km/h to round up photo interval time\n"))
+  }
 
   return (list(
-    flightHeight=flightHeight,
+    flightHeight = flightHeight,
     flightLineDistance=flightLineDistance,
     minimumShutterSpeed=minimumShutterSpeed,
     photoInterval=photoInterval,
-    groundHeight = groundHeight))
+    groundHeight = groundHeight,
+    flightSpeedKmH = flightSpeedKmH))
 }
 
-# Example
-#
+# # Example
+# #
 # (params = flightParameters(
 #   GSD=4.325,
 #   flightSpeedKmH=30,
-#   overlapWidth = 0.8,
-#   overlapHeight = 0.8
+#   sideOverlap = 0.8, #mudar para overlapFront
+#   frontOverlap = 0.8 #mudar para overpSide
 # ))
+
+
+#TODO
+#Possibilidade de DOUBLE GRID (perpendicular ao mais comprido)
