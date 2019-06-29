@@ -305,8 +305,10 @@ p4adv = list(sensorWD = 13.2,
           imageWidthPx = 5472)
 
 
-#'  Function to generate Litchi csv flight plan
+#' Function to calculate flight parameters
 #'
+#' This function will calculate the flight parameters by providing the camera settings
+#' target flight height or GSD, front and side overlap.
 #'
 #' @rdname flightParameters
 #'
@@ -314,10 +316,11 @@ p4adv = list(sensorWD = 13.2,
 #' @param focalLength35 numeric. Camera focal length 35mm equivalent, default 20
 #' @param aspectRatio character. Aspect ratio of the picture, default "4:3"
 #' @param imageWidth numeric. Width of the image in number of pixels, default 4000
-#' @param GSD target ground resolution in centimeters
-#' @param flightSpeedKmH flight speed in km/h
+#' @param GSD target ground resolution in centimeters, must provide either `GSD` or `flightHeight`
+#' @param flightHeight target flight height, default NA
 #' @param sideOverlap desired width overlap between photos
 #' @param frontOverlap desired height overlap between photos
+#' @param flightSpeedKmH flight speed in km/h
 #'
 #' @examples
 #' params = flightParameters(
