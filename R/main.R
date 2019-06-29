@@ -8,10 +8,12 @@ MIN_PHOTO_INTERVAL = 2
 #' @param ogrROI range of interest loaded as an OGR layer, must be in
 #' a metric units projection for working properly
 #' @param outputPath output path for the csv file
-#' @param uav either "p3" or "p4adv" for loading Phantom 3-4std or Phanton4-adv/pro
-#' camera profiles, default "p3"
-#' @param GSD target ground resolution in centimeters, must specify either GSD or flightHeight, default NA
-#' @param flightHeight flight height in meters, default NA
+#' @param sensorWidth numeric. sensor width in mm, default 6.17
+#' @param focalLength35 numeric. focal length equivalent to 35mm, default 20
+#' @param aspectRatio character. Aspect ratio of the camera, default 4:3
+#' @param imageWidthPx integer. The number of pixels captured in the width direction, default 4000
+#' @param GSD numeric. Target ground resolution in centimeters, must specify either GSD or flightHeight, default NA
+#' @param flightHeight numeric. target flight height, default NA
 #' @param flightSpeedKmH flight speed in km/h, default 54
 #' @param sideOverlap desired width overlap between photos, default 0.8
 #' @param frontOverlap desired height overlap between photos, defualt 0.8
@@ -193,6 +195,25 @@ generateLitchiPlan = function(ogrROI, outputPath, sensorWidth = 6.17,
     }
   }
   waypoints = wptsMatrix
+
+  # Break if distance greater than the maxWaypointDistance
+  waypointsXY = waypoints[, c("x", "y")]
+  distances = sqrt(diff(waypoints$x)**2 + diff(waypoints$y)**2)
+  breakIdx = distances > maxWaypointsDistance
+  midpoints = (waypointsXY[breakIdx,] + waypointsXY[-1,][breakIdx,])/2
+
+  newSize = nrow(waypoints) + sum(breakIdx)
+  waypoints2 = data.frame(x = numeric(newSize),
+                          y = numeric(newSize),
+                          isCurve = FALSE,
+                          takePhoto = TRUE)
+
+  pos = seq_along(breakIdx)[breakIdx]
+  idx = pos + order(pos)
+  waypoints2[idx,1:2] = midpoints
+  waypoints2[-idx,] = waypoints
+  waypoints = waypoints2
+
 
   # Transform to WGS84 latitude and longitude
   transform = rgdal::rawTransform(ogrROI@proj4string@projargs, wgs84, n=nrow(waypoints), x=waypoints[,1], y=waypoints[,2])
