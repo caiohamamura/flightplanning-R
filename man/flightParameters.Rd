@@ -4,20 +4,27 @@
 \alias{flightParameters}
 \title{Function to generate Litchi csv flight plan}
 \usage{
-flightParameters(uav = "p3", GSD = 4, overlapWidth = 0.8,
-  overlapHeight = 0.8, flightSpeedKmH = 30)
+flightParameters(sensorWidth = 6.17, focalLength35 = 20,
+  aspectRatio = "4:3", imageWidthPx = 4000, GSD = 4,
+  sideOverlap = 0.8, frontOverlap = 0.8, flightSpeedKmH = NA,
+  flightHeight = NA)
 }
 \arguments{
-\item{uav}{either "p3" or "p4adv" for loading Phantom 3-4std or Phanton4-adv/pro
-camera profiles}
+\item{sensorWidth}{numeric. Camera sensor width in milimeters, default 6.17}
+
+\item{focalLength35}{numeric. Camera focal length 35mm equivalent, default 20}
+
+\item{aspectRatio}{character. Aspect ratio of the picture, default "4:3"}
 
 \item{GSD}{target ground resolution in centimeters}
 
-\item{overlapWidth}{desired width overlap between photos}
+\item{sideOverlap}{desired width overlap between photos}
 
-\item{overlapHeight}{desired height overlap between photos}
+\item{frontOverlap}{desired height overlap between photos}
 
 \item{flightSpeedKmH}{flight speed in km/h}
+
+\item{imageWidth}{numeric. Width of the image in number of pixels, default 4000}
 }
 \description{
 Function to generate Litchi csv flight plan
@@ -26,8 +33,8 @@ Function to generate Litchi csv flight plan
 params = flightParameters(
   GSD=4.325,
   flightSpeedKmH=30,
-  overlapWidth = 0.8,
-  overlapHeight = 0.8
+  sideOverlap = 0.8,
+  frontOverlap = 0.8
  )
 
 }

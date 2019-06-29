@@ -4,10 +4,12 @@
 \alias{generateLitchiPlan}
 \title{Function to generate Litchi csv flight plan}
 \usage{
-generateLitchiPlan(ogrROI, outputPath, uav = "p3", GSD = 4,
-  flightSpeedKmH = 30, overlapWidth = 0.8, overlapHeight = 0.8,
-  gimbalPitchAngle = -90, flightLinesAngle = -1,
-  maxWaypointsDistance = 2000, maxFlightTime = 15)
+generateLitchiPlan(ogrROI, outputPath, sensorWidth = 6.17,
+  focalLength35 = 20, aspectRatio = "4:3", imageWidthPx = 4000,
+  GSD = NA, flightHeight = NA, flightSpeedKmH = 54,
+  sideOverlap = 0.8, frontOverlap = 0.8, gimbalPitchAngle = -90,
+  flightLinesAngle = -1, maxWaypointsDistance = 2000,
+  maxFlightTime = 15, startingPoint = 1)
 }
 \arguments{
 \item{ogrROI}{range of interest loaded as an OGR layer, must be in
@@ -15,16 +17,23 @@ a metric units projection for working properly}
 
 \item{outputPath}{output path for the csv file}
 
-\item{uav}{either "p3" or "p4adv" for loading Phantom 3-4std or Phanton4-adv/pro
-camera profiles, default "p3"}
+\item{sensorWidth}{numeric. sensor width in mm, default 6.17}
 
-\item{GSD}{target ground resolution in centimeters, default 4}
+\item{focalLength35}{numeric. focal length equivalent to 35mm, default 20}
 
-\item{flightSpeedKmH}{flight speed in km/h, default 30}
+\item{aspectRatio}{character. Aspect ratio of the camera, default 4:3}
 
-\item{overlapWidth}{desired width overlap between photos, default 0.8}
+\item{imageWidthPx}{integer. The number of pixels captured in the width direction, default 4000}
 
-\item{overlapHeight}{desired height overlap between photos, defualt 0.8}
+\item{GSD}{numeric. Target ground resolution in centimeters, must specify either GSD or flightHeight, default NA}
+
+\item{flightHeight}{numeric. target flight height, default NA}
+
+\item{flightSpeedKmH}{flight speed in km/h, default 54}
+
+\item{sideOverlap}{desired width overlap between photos, default 0.8}
+
+\item{frontOverlap}{desired height overlap between photos, defualt 0.8}
 
 \item{gimbalPitchAngle}{gimbal angle for taking photos, default -90 (can be overriden at flight time)}
 
@@ -35,6 +44,8 @@ default 2000 (some issues have been reported with distances > 2km)}
 
 \item{maxFlightTime}{maximum flight time. If mission is greater than the estimated
 time, it will be splitted into smaller missions.}
+
+\item{startingPoint}{numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1}
 }
 \description{
 Function to generate Litchi csv flight plan
@@ -47,8 +58,8 @@ generateLitchiPlan(ogrROI = exampleBoundary,
                    uav = "p3",
                    GSD = 4.325,
                    flightSpeedKmH = 30,
-                   overlapWidth = 0.8,
-                   overlapHeight = 0.8,
+                   sideOverlap = 0.8,
+                   frontOverlap = 0.8,
                    gimbalPitchAngle = -90,
                    flightLinesAngle = -1,
                    maxWaypointsDistance = 2000,
