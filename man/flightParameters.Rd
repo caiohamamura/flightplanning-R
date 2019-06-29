@@ -2,7 +2,7 @@
 % Please edit documentation in R/main.R
 \name{flightParameters}
 \alias{flightParameters}
-\title{Function to generate Litchi csv flight plan}
+\title{Function to calculate flight parameters}
 \usage{
 flightParameters(sensorWidth = 6.17, focalLength35 = 20,
   aspectRatio = "4:3", imageWidthPx = 4000, GSD = 4,
@@ -27,7 +27,8 @@ flightParameters(sensorWidth = 6.17, focalLength35 = 20,
 \item{imageWidth}{numeric. Width of the image in number of pixels, default 4000}
 }
 \description{
-Function to generate Litchi csv flight plan
+This function will calculate the flight parameters by providing the camera settings
+  target flight height or GSD, front and side overlap.
 }
 \examples{
 params = flightParameters(
