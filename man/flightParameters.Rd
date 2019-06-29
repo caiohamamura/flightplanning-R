@@ -16,7 +16,7 @@ flightParameters(sensorWidth = 6.17, focalLength35 = 20,
 
 \item{aspectRatio}{character. Aspect ratio of the picture, default "4:3"}
 
-\item{GSD}{target ground resolution in centimeters}
+\item{GSD}{target ground resolution in centimeters, must provide either `GSD` or `flightHeight`}
 
 \item{sideOverlap}{desired width overlap between photos}
 
@@ -24,11 +24,13 @@ flightParameters(sensorWidth = 6.17, focalLength35 = 20,
 
 \item{flightSpeedKmH}{flight speed in km/h}
 
+\item{flightHeight}{target flight height, default NA}
+
 \item{imageWidth}{numeric. Width of the image in number of pixels, default 4000}
 }
 \description{
 This function will calculate the flight parameters by providing the camera settings
-  target flight height or GSD, front and side overlap.
+target flight height or GSD, front and side overlap.
 }
 \examples{
 params = flightParameters(
