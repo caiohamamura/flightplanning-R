@@ -5,7 +5,7 @@
 \title{Function to calculate flight parameters}
 \usage{
 flightParameters(sensorWidth = 6.17, focalLength35 = 20,
-  aspectRatio = "4:3", imageWidthPx = 4000, GSD = 4,
+  aspectRatio = "4:3", imageWidthPx = 4000, GSD = NA,
   sideOverlap = 0.8, frontOverlap = 0.8, flightSpeedKmH = NA,
   flightHeight = NA)
 }
