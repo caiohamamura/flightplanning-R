@@ -26,6 +26,7 @@ MIN_PHOTO_INTERVAL = 2
 #' @param startingPoint numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
 #'
 #' @examples
+#' library(flightplanning)
 #' data(exampleBoundary)
 #' outPath = tempfile(fileext=".csv")
 #' generateLitchiPlan(ogrROI = exampleBoundary,
@@ -200,19 +201,21 @@ generateLitchiPlan = function(ogrROI, outputPath, sensorWidth = 6.17,
   waypointsXY = waypoints[, c("x", "y")]
   distances = sqrt(diff(waypoints$x)**2 + diff(waypoints$y)**2)
   breakIdx = distances > maxWaypointsDistance
-  midpoints = (waypointsXY[breakIdx,] + waypointsXY[-1,][breakIdx,])/2
 
   newSize = nrow(waypoints) + sum(breakIdx)
-  waypoints2 = data.frame(x = numeric(newSize),
-                          y = numeric(newSize),
-                          isCurve = FALSE,
-                          takePhoto = TRUE)
+  if (newSize != nrow(waypoints)) {
+    midpoints = (waypointsXY[breakIdx,] + waypointsXY[-1,][breakIdx,])/2
+    waypoints2 = data.frame(x = numeric(newSize),
+                            y = numeric(newSize),
+                            isCurve = FALSE,
+                            takePhoto = TRUE)
 
-  pos = seq_along(breakIdx)[breakIdx]
-  idx = pos + order(pos)
-  waypoints2[idx,1:2] = midpoints
-  waypoints2[-idx,] = waypoints
-  waypoints = waypoints2
+    pos = seq_along(breakIdx)[breakIdx]
+    idx = pos + order(pos)
+    waypoints2[idx,1:2] = midpoints
+    waypoints2[-idx,] = waypoints
+    waypoints = waypoints2
+  }
 
 
   # Transform to WGS84 latitude and longitude
