@@ -345,7 +345,7 @@ flightParameters = function(
   flightSpeedKmH = NA,
   flightHeight = NA) {
 
-  if (is.na(GSD) && is.na(flightHeight)) {
+  if (is.na(GSD) == is.na(flightHeight)) {
     stop("You must specify either GSD or flightHeight!")
   }
 
