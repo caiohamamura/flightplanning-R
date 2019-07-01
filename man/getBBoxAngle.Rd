@@ -6,6 +6,11 @@
 \usage{
 getBBoxAngle(vertices, alpha)
 }
+\arguments{
+\item{vertices}{the vertices which to get the bounding box from}
+
+\item{alpha}{the angle to rotate the bounding box}
+}
 \description{
 Provided an angle, calculate the corresponding minimum bounding box
 }

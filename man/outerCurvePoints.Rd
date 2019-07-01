@@ -6,6 +6,13 @@
 \usage{
 outerCurvePoints(waypoints, angle, flightLineDistance)
 }
+\arguments{
+\item{waypoints}{the waypoints of the flight plan}
+
+\item{angle}{angle for the flight lines}
+
+\item{flightLineDistance}{the distance between the flight lines in meters}
+}
 \description{
 Create outer curves for the flight lines
 }

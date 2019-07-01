@@ -62,14 +62,14 @@ library(flightplanning)
 data(exampleBoundary)
 outPath = tempfile(fileext=".csv")
 litchi.plan(roi = exampleBoundary,
-                   output = outPath,
-                   gsd = 5,
-                   flight.speed.kmh = 54,
-                   side.overlap = 0.8,
-                   front.overlap = 0.8,
-                   flight.lines.angle = -1,
-                   max.waypoints.distance = 2000,
-                   max.flight.time = 15)
+            output = outPath,
+            gsd = 5,
+            flight.speed.kmh = 54,
+            side.overlap = 0.8,
+            front.overlap = 0.8,
+            flight.lines.angle = -1,
+            max.waypoints.distance = 2000,
+            max.flight.time = 15)
 
 
 }
