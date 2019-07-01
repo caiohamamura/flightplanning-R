@@ -7,6 +7,9 @@ the two neighbors points}
 \usage{
 getAngles(waypoints)
 }
+\arguments{
+\item{waypoints}{the waypoints of the flight plan}
+}
 \description{
 Get angles for each point considering
 the two neighbors points

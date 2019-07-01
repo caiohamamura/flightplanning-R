@@ -5,7 +5,14 @@
 \title{Given a xy matrix of points, adjust the
 points to avoid acute angles < 80 degrees}
 \usage{
-adjustAcuteAngles(xy, angle, minAngle)
+adjustAcuteAngles(xy, angle, minAngle = 80)
+}
+\arguments{
+\item{xy}{xy dataframe}
+
+\item{angle}{angle of the flight lines}
+
+\item{minAngle}{the minimum angle to below which will be projected}
 }
 \description{
 Given a xy matrix of points, adjust the

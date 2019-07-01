@@ -73,6 +73,10 @@ getMinBBox <- function(xy) {
 }
 
 #' Provided an angle, calculate the corresponding minimum bounding box
+#'
+#' @param vertices the vertices which to get the bounding box from
+#' @param alpha the angle to rotate the bounding box
+#'
 #' @importFrom grDevices chull
 getBBoxAngle = function(vertices, alpha) {
   centroid = apply(vertices, 2, mean)
@@ -107,7 +111,11 @@ getBBoxAngle = function(vertices, alpha) {
 
 #' Given a xy matrix of points, adjust the
 #' points to avoid acute angles < 80 degrees
-adjustAcuteAngles = function(xy, angle, minAngle) {
+#'
+#' @param xy xy dataframe
+#' @param angle angle of the flight lines
+#' @param minAngle the minimum angle to below which will be projected
+adjustAcuteAngles = function(xy, angle, minAngle = 80) {
   xy_mat = as.matrix(xy[,1:2])
   rads = angle*pi/180
   nPoints = nrow(xy)
@@ -155,6 +163,10 @@ adjustAcuteAngles = function(xy, angle, minAngle) {
 }
 
 #' Create outer curves for the flight lines
+#'
+#' @param waypoints the waypoints of the flight plan
+#' @param angle angle for the flight lines
+#' @param flightLineDistance the distance between the flight lines in meters
 outerCurvePoints = function(waypoints, angle, flightLineDistance) {
   mask = getAngles(waypoints) == 180
   mask[is.na(mask)] = TRUE
@@ -188,6 +200,8 @@ outerCurvePoints = function(waypoints, angle, flightLineDistance) {
 
 #' Get angles for each point considering
 #' the two neighbors points
+#'
+#' @param waypoints the waypoints of the flight plan
 getAngles = function(waypoints) {
   nPoints = nrow(waypoints)
   vectors = waypoints[-1,]-waypoints[-nPoints,]

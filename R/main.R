@@ -36,14 +36,14 @@ MIN_PHOTO_INTERVAL = 2
 #' data(exampleBoundary)
 #' outPath = tempfile(fileext=".csv")
 #' litchi.plan(roi = exampleBoundary,
-#'                    output = outPath,
-#'                    gsd = 5,
-#'                    flight.speed.kmh = 54,
-#'                    side.overlap = 0.8,
-#'                    front.overlap = 0.8,
-#'                    flight.lines.angle = -1,
-#'                    max.waypoints.distance = 2000,
-#'                    max.flight.time = 15)
+#'             output = outPath,
+#'             gsd = 5,
+#'             flight.speed.kmh = 54,
+#'             side.overlap = 0.8,
+#'             front.overlap = 0.8,
+#'             flight.lines.angle = -1,
+#'             max.waypoints.distance = 2000,
+#'             max.flight.time = 15)
 #'
 #'
 #' @export
@@ -333,7 +333,7 @@ p4adv = list(sensorWD = 13.2,
 #' @param sensor.width numeric. Camera sensor width in milimeters, default 6.17
 #' @param focal.length35 numeric. Camera focal length 35mm equivalent, default 20
 #' @param aspect.ratio character. Aspect ratio of the picture, default "4:3"
-#' @param imageWidth numeric. Width of the image in number of pixels, default 4000
+#' @param image.width.px numeric. Width of the image in number of pixels, default 4000
 #' @param gsd target ground resolution in centimeters, must provide either `gsd` or `height`
 #' @param height target flight height, default NA
 #' @param side.overlap desired width overlap between photos
@@ -423,8 +423,8 @@ flight.parameters = function(
 # # Example
 # #
 # (params = flight.parameters(
-#   gsd=4.325,
-#   flight.speed.kmh=30,
+#   gsd=5,
+#   flight.speed.kmh=52,
 #   side.overlap = 0.8, #mudar para overlapFront
 #   front.overlap = 0.8 #mudar para overpSide
 # ))
