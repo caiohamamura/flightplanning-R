@@ -60,7 +60,7 @@ litchi.plan = function(roi, output, sensor.width = 6.17,
   # Check parameters
   if (class(roi)[1] != "SpatialPolygonsDataFrame")
     stop("roi is not a valid polygon layer")
-  if (!grep("units=m", as.character(roi@proj4string@projargs)))
+  if (length(grep("units=m", as.character(roi@proj4string@projargs))) == 0)
     stop("roi is not in a metric projection")
 
   # Parameters calculated from UAV
