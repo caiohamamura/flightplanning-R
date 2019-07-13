@@ -7,11 +7,35 @@ matrix:
   - os: osx
     env: BADGE=osx
 
+
+addons:
+  apt:
+    packages:
+      - ccache
+      - gdal-bin
+      - libgdal1-dev
+      - libproj-dev
+
+# Code coverage
+r_packages:
+  - covr
+
+
+r_binary_packages:
+  - rgdal
   
 language: R
 sudo: false
-cache: packages
+cache: 
+  - ccache
+  - packages  
+
+before_install:
+  - mkdir $HOME/.R && echo -e 'CXX_STD = CXX14\n\nVER=\nCCACHE=ccache\nCC=$(CCACHE) gcc$(VER) -std=gnu99\nCXX=$(CCACHE) g++$(VER)\nC11=$(CCACHE) g++$(VER)\nC14=$(CCACHE) g++$(VER)\nFC=$(CCACHE) gfortran$(VER)\nF77=$(CCACHE) gfortran$(VER)' > $HOME/.R/Makevars
 
 script:
 - R CMD build .
 - R CMD check *tar.gz --as-cran
+
+after_success:
+- Rscript -e 'library(covr); codecov()'
