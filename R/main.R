@@ -1,4 +1,6 @@
 MIN_PHOTO_INTERVAL = 2
+DIAGONAL_35 = 43.266615305567875
+
 
 #'  Function to generate Litchi csv flight plan
 #'
@@ -8,26 +10,18 @@ MIN_PHOTO_INTERVAL = 2
 #' @param roi range of interest loaded as an OGR layer, must be in
 #' a metric units projection for working properly
 #' @param output output path for the csv file
-#' @param sensor.width numeric. sensor width in mm, default 6.17
-#' @param focal.length35 numeric. focal length equivalent to 35mm, default 20
-#' @param aspect.ratio character. Aspect ratio of the camera, default 4:3
-#' @param image.width.px integer. The number of pixels captured in the width direction, default 4000
-#' @param gsd numeric. Target ground resolution in centimeters, must specify either gsd or height, default NA
-#' @param height numeric. target flight height, default NA
-#' @param flight.speed.kmh flight speed in km/h, default 54
-#' @param side.overlap desired width overlap between photos, default 0.8
-#' @param front.overlap desired height overlap between photos, defualt 0.8
-#' @param gimbal.pitch.angle gimbal angle for taking photos, default -90 (can be overriden at flight time)
-#' @param flight.lines.angle angle for the flight lines, default -1 (auto set based on larger dimensions)
+#' @param flight.params Flight Parameters. parameters calculated from flight.parameters()
+#' @param gimbal.pitch.angle gimbal angle for taking photos, default -90 (overriden at flight time)
+#' @param flight.lines.angle angle for the flight lines, default -1 (auto set based on larger direction)
 #' @param max.waypoints.distance maximum distance between waypoints in meters,
-#' default 2000 (some issues have been reported with distances > 2km)
+#' default 2000 (some issues have been reported with distances > 2 Km)
 #' @param max.flight.time maximum flight time. If mission is greater than the estimated
 #' time, it will be splitted into smaller missions.
 #' @param starting.point numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
 #'
 #' @note this function will feed the csv flight plan with the `gimbal.pitch.angle`
-#' and the photo time interval for each waypoint, but those are not supported
-#' by Litchi yet, although they are present in the exported csv inside the
+#' and the `photo time interval` for each waypoint, but those are not supported
+#' by Litchi yet, although they are present in the exported csv from the
 #' Litchi hub platform, though it may be supported in the future; when it does
 #' the function will already work with this feature.
 #'
@@ -35,12 +29,17 @@ MIN_PHOTO_INTERVAL = 2
 #' library(flightplanning)
 #' data(exampleBoundary)
 #' outPath = tempfile(fileext=".csv")
-#' litchi.plan(roi = exampleBoundary,
-#'             output = outPath,
-#'             gsd = 5,
-#'             flight.speed.kmh = 54,
-#'             side.overlap = 0.8,
-#'             front.overlap = 0.8,
+#'
+#' params = flight.parameters(
+#'   gsd = 4,
+#'   side.overlap = 0.8,
+#'   front.overlap = 0.8,
+#'   flight.speed.kmh = 54
+#' )
+#'
+#' litchi.plan(exampleBoundary,
+#'             outPath,
+#'             params,
 #'             flight.lines.angle = -1,
 #'             max.waypoints.distance = 2000,
 #'             max.flight.time = 15)
@@ -50,38 +49,25 @@ MIN_PHOTO_INTERVAL = 2
 #' @import sp rgeos rgdal
 #' @importFrom graphics text
 #' @importFrom utils data read.csv write.csv
-litchi.plan = function(roi, output, sensor.width = 6.17,
-                              focal.length35=20, aspect.ratio = "4:3",
-                              image.width.px = 4000, gsd = NA, height = NA,
-                              flight.speed.kmh = 54, side.overlap = 0.8,
-                              front.overlap = 0.8, gimbal.pitch.angle = -90,
-                              flight.lines.angle = -1, max.waypoints.distance = 2000,
-                              max.flight.time = 15, starting.point = 1) {
+litchi.plan = function(roi, output,
+                       flight.params, gimbal.pitch.angle = -90,
+                       flight.lines.angle = -1, max.waypoints.distance = 2000,
+                       max.flight.time = 15, starting.point = 1) {
   # Check parameters
   if (class(roi)[1] != "SpatialPolygonsDataFrame")
     stop("roi is not a valid polygon layer")
   if (length(grep("units=m", as.character(roi@proj4string@projargs))) == 0)
     stop("roi is not in a metric projection")
+  if (methods::is(flight.params) != "Flight Parameters")
+    stop("Flight parameters is not an instance returned from flight.parameters()")
 
-  # Parameters calculated from UAV
-  params = flight.parameters(
-    sensor.width = sensor.width,
-    focal.length35 = focal.length35,
-    aspect.ratio = aspect.ratio,
-    image.width.px = image.width.px,
-    gsd = gsd,
-    side.overlap = side.overlap,
-    front.overlap = front.overlap,
-    flight.speed.kmh = flight.speed.kmh,
-    height = height
-  )
-
-  flight.speed.kmh = params$flight.speed.kmh
+  # Parameters calculated
+  flight.speed.kmh = flight.params@flight.speed.kmh
   flightSpeedMs = flight.speed.kmh / 3.6
-  height = params$height
-  groundHeight = params$ground.height
-  groundHeightOverlap = groundHeight*front.overlap
-  flightLineDistance = params$flight.line.distance
+  height = flight.params@height
+  groundHeight = flight.params@ground.height
+  groundHeightOverlap = groundHeight * flight.params@front.overlap
+  flightLineDistance = flight.params@flight.line.distance
   vertices = roi@polygons[[1]]@Polygons[[1]]@coords
 
   # Get bounding box parameters
@@ -245,12 +231,12 @@ litchi.plan = function(roi, output, sensor.width = 6.17,
   dfLitchi = dfLitchi[rep(1, length(lats)),]
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
-  dfLitchi$altitude.m. = params$height
+  dfLitchi$altitude.m. = flight.params@height
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_timeinterval[waypoints$takePhoto==1] = params$photo.interval
+  dfLitchi$photo_timeinterval[waypoints$takePhoto==1] = flight.params@photo.interval
   dfLitchi$actiontype1[waypoints$takePhoto==1] = 1
   dfLitchi$actiontype1[waypoints$takePhoto==0 & waypoints$isCurve==0] = 1
   dfLitchi$gimbal.pitch.angle = gimbal.pitch.angle
@@ -297,12 +283,12 @@ because the total time would be ", totalFlightTime, " minutes.")
   cat("## Flight settings ## \n")
   cat("#####################\n")
   cat("Min shutter speed: ")
-  cat(params$minimum.shutter.speed)
+  cat(flight.params@minimum.shutter.speed)
   cat("\nPhoto interval:    ")
-  cat(params$photo.interval)
+  cat(flight.params@photo.interval)
   cat(" s")
   cat("\nFlight speed:      ")
-  cat(params$flight.speed.kmh)
+  cat(flight.params@flight.speed.kmh)
   cat(" km/h")
   cat("\nFlight lines angle: ")
   cat(alpha)
@@ -312,16 +298,6 @@ because the total time would be ", totalFlightTime, " minutes.")
 }
 
 
-p3 = list(sensorWD = 6.17,
-          focal.length35 = 20,
-          aspect.ratio = "4:3",
-          image.width.px = 4000)
-
-p4adv = list(sensorWD = 13.2,
-          focal.length35 = 24,
-          aspect.ratio = "3:2",
-          image.width.px = 5472)
-
 
 #' Function to calculate flight parameters
 #'
@@ -330,10 +306,9 @@ p4adv = list(sensorWD = 13.2,
 #'
 #' @rdname flight.parameters
 #'
-#' @param sensor.width numeric. Camera sensor width in milimeters, default 6.17
 #' @param focal.length35 numeric. Camera focal length 35mm equivalent, default 20
-#' @param aspect.ratio character. Aspect ratio of the picture, default "4:3"
-#' @param image.width.px numeric. Width of the image in number of pixels, default 4000
+#' @param image.width.px numeric. Image width in pixels, default 4000
+#' @param image.height.px numeric. Image height in pixels, default 3000
 #' @param gsd target ground resolution in centimeters, must provide either `gsd` or `height`
 #' @param height target flight height, default NA
 #' @param side.overlap desired width overlap between photos
@@ -342,18 +317,17 @@ p4adv = list(sensorWD = 13.2,
 #'
 #' @examples
 #' params = flight.parameters(
-#'   gsd=4.325,
-#'   flight.speed.kmh=30,
+#'   gsd = 4,
 #'   side.overlap = 0.8,
-#'   front.overlap = 0.8
-#'  )
+#'   front.overlap = 0.8,
+#'   flight.speed.kmh = 54
+#' )
 #'
 #' @export
 flight.parameters = function(
-  sensor.width = 6.17,
   focal.length35 = 20,
-  aspect.ratio = "4:3",
   image.width.px = 4000,
+  image.height.px = 3000,
   gsd = NA,
   side.overlap = 0.8,
   front.overlap = 0.8,
@@ -364,23 +338,19 @@ flight.parameters = function(
     stop("You must specify either gsd or height!")
   }
 
-  # Size factor to divide
-  ratio = 3/4
-  sizeFactor = 34.6
-  if (aspect.ratio == "3:2") {
-    sizeFactor = 36.0
-    ratio = 2/3
-  }
 
-  realFocalLength = (sensor.width * focal.length35) / sizeFactor
+  image.diag.px = sqrt(image.width.px^2 + image.height.px^2)
   if (is.na(gsd)) {
-    gsd = height * sensor.width*100 / realFocalLength / image.width.px
+    mult.factor = (height / focal.length35)
+    diag.ground = DIAGONAL_35 * mult.factor
+    gsd = diag.ground / image.diag.px * 100
     groundWidth = image.width.px * gsd / 100
   } else {
     groundWidth = image.width.px * gsd / 100
-    height = (groundWidth / sensor.width) * realFocalLength
+    diag.ground = image.diag.px * gsd / 100
+    mult.factor = diag.ground / DIAGONAL_35
+    height = mult.factor * focal.length35
   }
-
 
   flightLineDistance = groundWidth - side.overlap * groundWidth
 
@@ -393,7 +363,7 @@ flight.parameters = function(
   maxPixelRoll = 1.2
   minimumShutterSpeed = paste("1/",round(speedPxPerSecond/maxPixelRoll), sep="")
 
-  groundHeight = groundWidth * ratio
+  groundHeight = image.height.px * gsd / 100
   groundHeightOverlap = groundHeight * front.overlap
   groundAllowedOffset = groundHeight - groundHeightOverlap
   photoInterval = groundAllowedOffset / flightSpeedMs
@@ -410,14 +380,17 @@ flight.parameters = function(
     cat(paste0("Speed lowered to ", flight.speed.kmh, "km/h to round up photo interval time\n"))
   }
 
-  return (list(
-    height = height,
-    gsd = gsd,
-    flight.line.distance=flightLineDistance,
-    minimum.shutter.speed=minimumShutterSpeed,
-    photo.interval=photoInterval,
-    ground.height = groundHeight,
-    flight.speed.kmh = flight.speed.kmh))
+  params = methods::new("Flight Parameters")
+  params@height = height
+  params@gsd = gsd
+  params@flight.line.distance = flightLineDistance
+  params@minimum.shutter.speed = minimumShutterSpeed
+  params@photo.interval = photoInterval
+  params@ground.height = groundHeight
+  params@front.overlap = front.overlap
+  params@flight.speed.kmh = flight.speed.kmh
+
+  return (params)
 }
 
 # # Example

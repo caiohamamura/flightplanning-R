@@ -4,10 +4,7 @@
 \alias{litchi.plan}
 \title{Function to generate Litchi csv flight plan}
 \usage{
-litchi.plan(roi, output, sensor.width = 6.17, focal.length35 = 20,
-  aspect.ratio = "4:3", image.width.px = 4000, gsd = NA,
-  height = NA, flight.speed.kmh = 54, side.overlap = 0.8,
-  front.overlap = 0.8, gimbal.pitch.angle = -90,
+litchi.plan(roi, output, flight.params, gimbal.pitch.angle = -90,
   flight.lines.angle = -1, max.waypoints.distance = 2000,
   max.flight.time = 15, starting.point = 1)
 }
@@ -17,30 +14,14 @@ a metric units projection for working properly}
 
 \item{output}{output path for the csv file}
 
-\item{sensor.width}{numeric. sensor width in mm, default 6.17}
+\item{flight.params}{Flight Parameters. parameters calculated from flight.parameters()}
 
-\item{focal.length35}{numeric. focal length equivalent to 35mm, default 20}
+\item{gimbal.pitch.angle}{gimbal angle for taking photos, default -90 (overriden at flight time)}
 
-\item{aspect.ratio}{character. Aspect ratio of the camera, default 4:3}
-
-\item{image.width.px}{integer. The number of pixels captured in the width direction, default 4000}
-
-\item{gsd}{numeric. Target ground resolution in centimeters, must specify either gsd or height, default NA}
-
-\item{height}{numeric. target flight height, default NA}
-
-\item{flight.speed.kmh}{flight speed in km/h, default 54}
-
-\item{side.overlap}{desired width overlap between photos, default 0.8}
-
-\item{front.overlap}{desired height overlap between photos, defualt 0.8}
-
-\item{gimbal.pitch.angle}{gimbal angle for taking photos, default -90 (can be overriden at flight time)}
-
-\item{flight.lines.angle}{angle for the flight lines, default -1 (auto set based on larger dimensions)}
+\item{flight.lines.angle}{angle for the flight lines, default -1 (auto set based on larger direction)}
 
 \item{max.waypoints.distance}{maximum distance between waypoints in meters,
-default 2000 (some issues have been reported with distances > 2km)}
+default 2000 (some issues have been reported with distances > 2 Km)}
 
 \item{max.flight.time}{maximum flight time. If mission is greater than the estimated
 time, it will be splitted into smaller missions.}
@@ -52,8 +33,8 @@ Function to generate Litchi csv flight plan
 }
 \note{
 this function will feed the csv flight plan with the `gimbal.pitch.angle`
-and the photo time interval for each waypoint, but those are not supported
-by Litchi yet, although they are present in the exported csv inside the
+and the `photo time interval` for each waypoint, but those are not supported
+by Litchi yet, although they are present in the exported csv from the
 Litchi hub platform, though it may be supported in the future; when it does
 the function will already work with this feature.
 }
@@ -61,12 +42,17 @@ the function will already work with this feature.
 library(flightplanning)
 data(exampleBoundary)
 outPath = tempfile(fileext=".csv")
-litchi.plan(roi = exampleBoundary,
-            output = outPath,
-            gsd = 5,
-            flight.speed.kmh = 54,
-            side.overlap = 0.8,
-            front.overlap = 0.8,
+
+params = flight.parameters(
+  gsd = 4,
+  side.overlap = 0.8,
+  front.overlap = 0.8,
+  flight.speed.kmh = 54
+)
+
+litchi.plan(exampleBoundary,
+            outPath,
+            params,
             flight.lines.angle = -1,
             max.waypoints.distance = 2000,
             max.flight.time = 15)

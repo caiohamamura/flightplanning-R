@@ -4,19 +4,16 @@
 \alias{flight.parameters}
 \title{Function to calculate flight parameters}
 \usage{
-flight.parameters(sensor.width = 6.17, focal.length35 = 20,
-  aspect.ratio = "4:3", image.width.px = 4000, gsd = NA,
-  side.overlap = 0.8, front.overlap = 0.8, flight.speed.kmh = NA,
-  height = NA)
+flight.parameters(focal.length35 = 20, image.width.px = 4000,
+  image.height.px = 3000, gsd = NA, side.overlap = 0.8,
+  front.overlap = 0.8, flight.speed.kmh = NA, height = NA)
 }
 \arguments{
-\item{sensor.width}{numeric. Camera sensor width in milimeters, default 6.17}
-
 \item{focal.length35}{numeric. Camera focal length 35mm equivalent, default 20}
 
-\item{aspect.ratio}{character. Aspect ratio of the picture, default "4:3"}
+\item{image.width.px}{numeric. Image width in pixels, default 4000}
 
-\item{image.width.px}{numeric. Width of the image in number of pixels, default 4000}
+\item{image.height.px}{numeric. Image height in pixels, default 3000}
 
 \item{gsd}{target ground resolution in centimeters, must provide either `gsd` or `height`}
 
@@ -34,10 +31,10 @@ target flight height or gsd, front and side overlap.
 }
 \examples{
 params = flight.parameters(
-  gsd=4.325,
-  flight.speed.kmh=30,
+  gsd = 4,
   side.overlap = 0.8,
-  front.overlap = 0.8
- )
+  front.overlap = 0.8,
+  flight.speed.kmh = 54
+)
 
 }
