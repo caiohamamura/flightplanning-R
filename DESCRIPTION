@@ -1,11 +1,19 @@
 Package: flightplanning
 Type: Package
 Title: UAV Flight Planning
-Version: 0.6.1
-Authors@R: person("Caio", "Hamamura", email = "caiohamamura@gmail.com", role = c("aut", "cre"))
+Version: 0.7.0
+Authors@R: c(
+  person("Caio", "Hamamura", email = "caiohamamura@gmail.com", role = c("aut", "cre")),
+  person("Danilo Roberti Alves de", "Almeida", email = "daniloflorestas@gmail.com", role = c("aut")),
+  person("Daniel de Almeida", "Papa", email = "daniel.papa@embrapa.br", role = c("aut")),
+  person("Hudson Franklin Pessoa", "Veras", email = "hudson@engeverde.com", role = c("aut")),
+  person("Evandro Orfanó", "Figueiredo", email = "evandro.figueiredo@embrapa.br", role = c("aut")))
 Description: Utility functions for creating flight plans, specially for Litchi.
 Imports:
-  rgdal, rgeos, sp
+  methods,
+  rgdal, 
+  rgeos, 
+  sp
 Depends: R (>= 3.0)
 License: MIT + file LICENSE
 Encoding: UTF-8

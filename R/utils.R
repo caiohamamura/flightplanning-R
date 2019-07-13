@@ -216,3 +216,27 @@ getAngles = function(waypoints) {
   angles = suppressWarnings(180-round(acos(dotProds/(dist_ab*dist_bc))*180/pi,2))
   angles
 }
+
+#' Class for Flight Parameters
+setClass("Flight Parameters",
+         slots = c(
+           flight.line.distance  = "numeric",
+           flight.speed.kmh      = "numeric",
+           front.overlap         = "numeric",
+           gsd                   = "numeric",
+           height                = "numeric",
+           ground.height         = "numeric",
+           minimum.shutter.speed = "character",
+           photo.interval        = "numeric"
+         ),
+         prototype = list(
+           flight.line.distance  = NA_real_,
+           flight.speed.kmh      = NA_real_,
+           front.overlap         = NA_real_,
+           gsd                   = NA_real_,
+           ground.height         = NA_real_,
+           height                = NA_real_,
+           minimum.shutter.speed = NA_character_,
+           photo.interval        = NA_real_
+         )
+)
