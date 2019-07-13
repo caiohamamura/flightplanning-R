@@ -30,7 +30,7 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #' data(exampleBoundary)
 #' outPath = tempfile(fileext=".csv")
 #'
-#' params = flight.parameters(
+#' flight.params = flight.parameters(
 #'   gsd = 4,
 #'   side.overlap = 0.8,
 #'   front.overlap = 0.8,
@@ -39,7 +39,7 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #'
 #' litchi.plan(exampleBoundary,
 #'             outPath,
-#'             params,
+#'             flight.params,
 #'             flight.lines.angle = -1,
 #'             max.waypoints.distance = 2000,
 #'             max.flight.time = 15)
@@ -58,7 +58,7 @@ litchi.plan = function(roi, output,
     stop("roi is not a valid polygon layer")
   if (length(grep("units=m", as.character(roi@proj4string@projargs))) == 0)
     stop("roi is not in a metric projection")
-  if (methods::is(flight.params) != "Flight Parameters")
+  if (methods::is(flight.params)[1] != "Flight Parameters")
     stop("Flight parameters is not an instance returned from flight.parameters()")
 
   # Parameters calculated
@@ -216,8 +216,6 @@ litchi.plan = function(roi, output,
   lngs = transform[[1]]
   graphics::plot(waypoints[,1:2])
   graphics::polygon(roi@polygons[[1]]@Polygons[[1]]@coords)
-  graphics::lines(waypoints[,1:2], lty=2)
-  graphics::text(waypoints[,1], waypoints[,2], seq_along(waypoints[,1]), pos=3)
 
 
   # Calculate heading
@@ -250,6 +248,7 @@ litchi.plan = function(roi, output,
   flightTime = distAcum / (flightSpeedMs*0.75) / 60
   finalSize = nrow(dfLitchi)
   totalFlightTime = flightTime[finalSize]
+  dfLitchi$split = 1
   if (totalFlightTime > max.flight.time) {
     indexes = seq_len(finalSize)
     nBreaks = ceiling(totalFlightTime/max.flight.time)
@@ -280,6 +279,14 @@ because the total time would be ", totalFlightTime, " minutes.")
   } else {
     write.csv(dfLitchi, output, row.names = FALSE)
   }
+
+  colors = grDevices::rainbow(length(unique(dfLitchi$split)))
+  for (i in unique(dfLitchi$split))
+  {
+    lines(waypoints[dfLitchi$split == i,1:2], lty=2, col=colors[as.integer(i)])
+  }
+  graphics::text(waypoints[,1], waypoints[,2], seq_along(waypoints[,1]), pos=3)
+
 
   cat("#####################\n")
   cat("## Flight settings ## \n")

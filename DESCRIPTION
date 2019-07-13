@@ -10,6 +10,8 @@ Authors@R: c(
   person("Evandro Orfanó", "Figueiredo", email = "evandro.figueiredo@embrapa.br", role = c("aut")))
 Description: Utility functions for creating flight plans, specially for Litchi.
 Imports:
+  graphics,
+  grDevices,
   methods,
   rgdal, 
   rgeos, 
