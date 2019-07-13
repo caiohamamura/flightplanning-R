@@ -158,10 +158,126 @@ test_that("Litchi plan outputs the csv file", {
 
   litchi.plan(exampleBoundary,
               outPath,
-              params,
-              flight.lines.angle = -1,
-              max.waypoints.distance = 2000,
-              max.flight.time = 15)
+              params)
+  title("Defaults")
 
   expect_true(file.exists(outPath))
+})
+
+
+test_that("Different starting points are working", {
+  data(exampleBoundary)
+  outPath = tempfile(fileext=".csv")
+
+  params = flight.parameters(
+    gsd = 4,
+    side.overlap = 0,
+    front.overlap = 0,
+    flight.speed.kmh = 54
+  )
+
+  litchi.plan(exampleBoundary,
+              outPath,
+              params,
+              starting.point = 2)
+  title("Starting point 2")
+  litchi.plan(exampleBoundary,
+              outPath,
+              params,
+              starting.point = 3)
+  title("Starting point 3")
+  litchi.plan(exampleBoundary,
+              outPath,
+              params,
+              starting.point = 4)
+  title("Starting point 4")
+  succeed()
+})
+
+
+test_that("Different flight line angles are working", {
+  data(exampleBoundary)
+  outPath = tempfile(fileext=".csv")
+
+  params = flight.parameters(
+    gsd = 4,
+    side.overlap = 0,
+    front.overlap = 0,
+    flight.speed.kmh = 54
+  )
+
+  litchi.plan(exampleBoundary,
+              outPath,
+              params,
+              flight.lines.angle = 45)
+  title("45 degrees")
+  litchi.plan(exampleBoundary,
+              outPath,
+              params,
+              flight.lines.angle = 90)
+  title("90 degrees")
+  litchi.plan(exampleBoundary,
+              outPath,
+              params,
+              flight.lines.angle = 135)
+  title("135 degrees")
+  succeed()
+})
+
+
+test_that("Did not provide legal ROI", {
+  outPath = tempfile(fileext=".csv")
+  expect_error( litchi.plan(NA, outPath, NA) )
+})
+
+
+test_that("ROI is not in a metric projection", {
+  outPath = tempfile(fileext=".csv")
+  data(exampleBoundary)
+  roi = exampleBoundary
+  roi = sp::spTransform(roi, "+init=EPSG:4326")
+  expect_error( litchi.plan(roi, outPath, NA) )
+})
+
+
+test_that("Did not provide Flight Parameters", {
+  data(exampleBoundary)
+  outPath = tempfile(fileext=".csv")
+  expect_error( litchi.plan(exampleBoundary, outPath, NA) )
+})
+
+
+test_that("Break waypoints too far", {
+  outPath = tempfile(fileext=".csv")
+  data(exampleBoundary)
+  params = flight.parameters(
+    gsd = 4,
+    side.overlap = 0,
+    front.overlap = 0,
+    flight.speed.kmh = 54
+  )
+
+  litchi.plan(exampleBoundary, outPath, params,
+                            max.waypoints.distance = 1000)
+  title("Break waypoints farther than 1000 meters")
+
+  succeed()
+})
+
+
+test_that("Break flight if exceeds max flight time", {
+  outPath = tempfile(fileext=".csv")
+  data(exampleBoundary)
+  params = flight.parameters(
+    gsd = 4,
+    side.overlap = 0,
+    front.overlap = 0,
+    flight.speed.kmh = 54
+  )
+
+  litchi.plan(exampleBoundary, outPath, params,
+              max.flight.time = 10)
+  title("Break into multiple flights")
+
+  expect_equal(length(Sys.glob(paste0(tools::file_path_sans_ext(outPath), "*.csv"))), 3)
 })
