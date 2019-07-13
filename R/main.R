@@ -99,20 +99,22 @@ litchi.plan = function(roi, output,
   heightMHalf = -heightAdjusted/2
   heightPHalf = heightAdjusted/2
   yHeights = c(heightMHalf, heightPHalf)
+
+
+  # Switch position of the first point
+  if (starting.point == 2) {
+    yHeights = c(heightPHalf, heightMHalf)
+  } else if (starting.point == 3) {
+    xWidths = rev(xWidths)
+    yHeights = c(heightPHalf, heightMHalf)
+  } else if (starting.point == 4) {
+    xWidths = rev(xWidths)
+  }
+
   # Interleave one upper, two bottom
   # two upper, two bottom... until end
   yHeights = c(rep(c(yHeights, rev(yHeights)), nLines/2+1))
   yHeights = yHeights[1:length(xWidths)]
-
-  # Switch position of the first point
-  if (starting.point == 2) {
-    yHeights = rev(yHeights)
-  } else if (starting.point == 3) {
-    xWidths = rev(xWidths)
-    yHeights = rev(yHeights)
-  } else if (starting.point == 4) {
-    xWidths = rev(xWidths)
-  }
 
 
   # Calculate translated x and y from
