@@ -4,26 +4,26 @@
 \alias{flight.parameters}
 \title{Function to calculate flight parameters}
 \usage{
-flight.parameters(focal.length35 = 20, image.width.px = 4000,
-  image.height.px = 3000, gsd = NA, side.overlap = 0.8,
-  front.overlap = 0.8, flight.speed.kmh = NA, height = NA)
+flight.parameters(height = NA, gsd = NA, focal.length35 = 20,
+  image.width.px = 4000, image.height.px = 3000, side.overlap = 0.8,
+  front.overlap = 0.8, flight.speed.kmh = 54)
 }
 \arguments{
+\item{height}{target flight height, default NA}
+
+\item{gsd}{target ground resolution in centimeters, must provide either `gsd` or `height`}
+
 \item{focal.length35}{numeric. Camera focal length 35mm equivalent, default 20}
 
 \item{image.width.px}{numeric. Image width in pixels, default 4000}
 
 \item{image.height.px}{numeric. Image height in pixels, default 3000}
 
-\item{gsd}{target ground resolution in centimeters, must provide either `gsd` or `height`}
+\item{side.overlap}{desired width overlap between photos, default 0.8}
 
-\item{side.overlap}{desired width overlap between photos}
+\item{front.overlap}{desired height overlap between photos, default 0.8}
 
-\item{front.overlap}{desired height overlap between photos}
-
-\item{flight.speed.kmh}{flight speed in km/h}
-
-\item{height}{target flight height, default NA}
+\item{flight.speed.kmh}{flight speed in km/h, default 54.}
 }
 \description{
 This function will calculate the flight parameters by providing the camera settings

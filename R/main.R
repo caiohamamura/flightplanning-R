@@ -283,7 +283,7 @@ because the total time would be ", totalFlightTime, " minutes.")
   colors = grDevices::rainbow(length(unique(dfLitchi$split)))
   for (i in unique(dfLitchi$split))
   {
-    lines(waypoints[dfLitchi$split == i,1:2], lty=2, col=colors[as.integer(i)])
+    graphics::lines(waypoints[dfLitchi$split == i,1:2], lty=2, col=colors[as.integer(i)])
   }
   graphics::text(waypoints[,1], waypoints[,2], seq_along(waypoints[,1]), pos=3)
 
