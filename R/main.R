@@ -1,5 +1,5 @@
 MIN_PHOTO_INTERVAL = 2
-DIAGONAL_35 = 43.266615305567875
+DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 
 
 #'  Function to generate Litchi csv flight plan
@@ -306,14 +306,14 @@ because the total time would be ", totalFlightTime, " minutes.")
 #'
 #' @rdname flight.parameters
 #'
+#' @param gsd target ground resolution in centimeters, must provide either `gsd` or `height`
+#' @param height target flight height, default NA
 #' @param focal.length35 numeric. Camera focal length 35mm equivalent, default 20
 #' @param image.width.px numeric. Image width in pixels, default 4000
 #' @param image.height.px numeric. Image height in pixels, default 3000
-#' @param gsd target ground resolution in centimeters, must provide either `gsd` or `height`
-#' @param height target flight height, default NA
-#' @param side.overlap desired width overlap between photos
-#' @param front.overlap desired height overlap between photos
-#' @param flight.speed.kmh flight speed in km/h
+#' @param side.overlap desired width overlap between photos, default 0.8
+#' @param front.overlap desired height overlap between photos, default 0.8
+#' @param flight.speed.kmh flight speed in km/h, default 54.
 #'
 #' @examples
 #' params = flight.parameters(
@@ -325,14 +325,14 @@ because the total time would be ", totalFlightTime, " minutes.")
 #'
 #' @export
 flight.parameters = function(
+  height = NA,
+  gsd = NA,
   focal.length35 = 20,
   image.width.px = 4000,
   image.height.px = 3000,
-  gsd = NA,
   side.overlap = 0.8,
   front.overlap = 0.8,
-  flight.speed.kmh = NA,
-  height = NA) {
+  flight.speed.kmh = 54) {
 
   if (is.na(gsd) == is.na(height)) {
     stop("You must specify either gsd or height!")
@@ -342,13 +342,13 @@ flight.parameters = function(
   image.diag.px = sqrt(image.width.px^2 + image.height.px^2)
   if (is.na(gsd)) {
     mult.factor = (height / focal.length35)
-    diag.ground = DIAGONAL_35 * mult.factor
+    diag.ground = DIAG_35MM * mult.factor
     gsd = diag.ground / image.diag.px * 100
     groundWidth = image.width.px * gsd / 100
   } else {
     groundWidth = image.width.px * gsd / 100
     diag.ground = image.diag.px * gsd / 100
-    mult.factor = diag.ground / DIAGONAL_35
+    mult.factor = diag.ground / DIAG_35MM
     height = mult.factor * focal.length35
   }
 
