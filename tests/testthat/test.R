@@ -235,7 +235,7 @@ test_that("ROI is not in a metric projection", {
   outPath = tempfile(fileext=".csv")
   data(exampleBoundary)
   roi = exampleBoundary
-  roi = sp::spTransform(roi, "+init=EPSG:4326")
+  roi = sp::spTransform(roi, "+init=epsg:4326")
   expect_error( litchi.plan(roi, outPath, NA) )
 })
 
