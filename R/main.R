@@ -55,9 +55,9 @@ litchi.plan = function(roi, output,
                        max.flight.time = 15, starting.point = 1) {
   # Check parameters
   if (class(roi)[1] != "SpatialPolygonsDataFrame")
-    stop("roi is not a valid polygon layer")
+    stop("ROI is not a valid polygon layer")
   if (length(grep("units=m", as.character(roi@proj4string@projargs))) == 0)
-    stop("roi is not in a metric projection")
+    stop("ROI is not in a metric projection")
   if (methods::is(flight.params)[1] != "Flight Parameters")
     stop("Flight parameters is not an instance returned from flight.parameters()")
 
