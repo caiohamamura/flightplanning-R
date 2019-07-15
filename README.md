@@ -58,7 +58,7 @@ This package was developed by author and its contributors which helped providing
 # Install and load the package
 install.packages("devtools")
 require(devtools)
-install_github("caiohamamura/flightplanning-R", "v0.7.0")
+install_github("caiohamamura/flightplanning-R", "v0.7.1")
 library(flightplanning)
 
 params = flight.parameters(height=100,
@@ -67,7 +67,62 @@ params = flight.parameters(height=100,
                           front.overlap = 0.8)
                           
 params
+
+## Slot "flight.line.distance": 
+## [1] 34.61329 
+##  
+## Slot "flight.speed.kmh": 
+## [1] 46.72794 
+## 
+## Slot "front.overlap":
+## [1] 0.8
+## 
+## Slot "gsd":
+## [1] 4.326662
+## 
+## Slot "height":
+## [1] 100
+## 
+## Slot "ground.height":
+## [1] 129.7998
+## 
+## Slot "minimum.shutter.speed":
+## [1] "1/289"
+## 
+## Slot "photo.interval":
+## [1] 2
+
+# Load example SpatialDataFrame polygon
+data(exampleBoundary)
+
+# Set the output
+output = "output.csv"
+
+# Create the csv plan 
+litchi.plan(exampleBoundary,
+            output,
+            params,
+            flight.lines.angle = -1,
+            max.waypoints.distance = 2000,
+            max.flight.time = 15)
+            
+# Your flight was splitted in 2splits,
+# because the total time would be 27.6237815915755 minutes.
+# They were saved as:
+# output1.csv
+# output2.csv
+# The entire flight plan was saved as:
+# output_entire.csv
+# #####################
+# ## Flight settings ## 
+# #####################
+# Min shutter speed: 1/289
+# Photo interval:    2 s
+# Flight speed:      46.7279 km/h
+# Flight lines angle: 39.0626
+# Total flight time: 27.6239
 ```
+<img src="https://github.com/caiohamamura/flightplanning-R/blob/master/man/images/plot_flightplan.png" alt="Flight plan plot" align="center"/>
 
 ## References
-FIGUEIREDO, E. O. et al. Planos de Voo Semiautônomos para Fotogrametria com Aeronaves Remotamente Pilotadas de Classe 3
+FIGUEIREDO, E. O. et al. Planos de Voo Semiautônomos para Fotogrametria com Aeronaves Remotamente Pilotadas de Classe 3. Acre: EMBRAPA. 2018
