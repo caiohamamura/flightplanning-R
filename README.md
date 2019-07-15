@@ -106,8 +106,8 @@ litchi.plan(exampleBoundary,
             max.waypoints.distance = 2000,
             max.flight.time = 15)
             
-# Your flight was splitted in 2splits,
-# because the total time would be 27.6237815915755 minutes.
+# Your flight was splitted in 2 splits,
+# because the total time would be 27.62 minutes.
 # They were saved as:
 # output1.csv
 # output2.csv
