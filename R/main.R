@@ -261,8 +261,8 @@ litchi.plan = function(roi, output,
 
     dfLitchi$split = rep(1:nBreaks, diff(c(0, waypointsBreak, finalSize)))
     splits = split.data.frame(dfLitchi, f = dfLitchi$split)
-    message("Your flight was splitted in ", length(splits), "splits,
-because the total time would be ", totalFlightTime, " minutes.")
+    message("Your flight was splitted in ", length(splits), " splits,
+because the total time would be ", round(totalFlightTime, 2), " minutes.")
     message("They were saved as:")
     first = substr(output, 1, nchar(output)-4)
     second = substr(output, nchar(output)-3, nchar(output))
@@ -297,12 +297,12 @@ because the total time would be ", totalFlightTime, " minutes.")
   cat(flight.params@photo.interval)
   cat(" s")
   cat("\nFlight speed:      ")
-  cat(flight.params@flight.speed.kmh)
+  cat(round(flight.params@flight.speed.kmh, 4))
   cat(" km/h")
   cat("\nFlight lines angle: ")
-  cat(alpha)
+  cat(round(alpha, 4))
   cat('\nTotal flight time: ')
-  cat(totalFlightTime)
+  cat(round(totalFlightTime, 4))
   cat("\n")
 }
 
