@@ -53,6 +53,21 @@ default 2000 (some issues have been reported with distances > 2 Km)
 
 This package was developed by author and its contributors which helped providing the calculations and testing.
 
+## Example
+``` R
+# Install and load the package
+install.packages("devtools")
+require(devtools)
+install_github("caiohamamura/flightplanning-R", "v0.7.0")
+library(flightplanning)
 
-# References
+params = flight.parameters(height=100,
+                          flight.speed.kmh=54,
+                          side.overlap = 0.8,
+                          front.overlap = 0.8)
+                          
+params
+```
+
+## References
 FIGUEIREDO, E. O. et al. Planos de Voo Semiautônomos para Fotogrametria com Aeronaves Remotamente Pilotadas de Classe 3
