@@ -8,7 +8,7 @@ Authors@R: c(
   person("Daniel de Almeida", "Papa", email = "daniel.papa@embrapa.br", role = c("aut")),
   person("Hudson Franklin Pessoa", "Veras", email = "hudson@engeverde.com", role = c("aut")),
   person("Evandro Orfanó", "Figueiredo", email = "evandro.figueiredo@embrapa.br", role = c("aut")))
-Description: Utility functions for creating flight plans, specially for Litchi.
+Description: Utility functions for creating flight plans for unmanned aerial vehicles (UAV), specially for the Litchi Hub platform. It calculates the flight and camera settings based on the camera specifications, exporting the flight plan CSV format ready to import into Litchi Hub.
 Imports:
   graphics,
   grDevices,

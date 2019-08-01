@@ -7,6 +7,8 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #'
 #' @rdname litchi.plan
 #'
+#' @return A data frame with the waypoints calculated for the flight plan
+#'
 #' @param roi range of interest loaded as an OGR layer, must be in
 #' a metric units projection for working properly
 #' @param output output path for the csv file
@@ -288,22 +290,23 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
   graphics::text(waypoints[,1], waypoints[,2], seq_along(waypoints[,1]), pos=3)
 
 
-  cat("#####################\n")
-  cat("## Flight settings ## \n")
-  cat("#####################\n")
-  cat("Min shutter speed: ")
-  cat(flight.params@minimum.shutter.speed)
-  cat("\nPhoto interval:    ")
-  cat(flight.params@photo.interval)
-  cat(" s")
-  cat("\nFlight speed:      ")
-  cat(round(flight.params@flight.speed.kmh, 4))
-  cat(" km/h")
-  cat("\nFlight lines angle: ")
-  cat(round(alpha, 4))
-  cat('\nTotal flight time: ')
-  cat(round(totalFlightTime, 4))
-  cat("\n")
+  message("#####################")
+  message("## Flight settings ## ")
+  message("#####################")
+  message("Min shutter speed: ", appendLF = FALSE)
+  message(flight.params@minimum.shutter.speed)
+  message("Photo interval:    ", appendLF = FALSE)
+  message(flight.params@photo.interval, appendLF = FALSE)
+  message(" s")
+  message("Flight speed:      ", appendLF = FALSE)
+  message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
+  message(" km/h")
+  message("Flight lines angle: ", appendLF = FALSE)
+  message(round(alpha, 4))
+  message('Total flight time: ', appendLF = FALSE)
+  message(round(totalFlightTime, 4))
+
+  return (waypoints)
 }
 
 
@@ -386,7 +389,7 @@ flight.parameters = function(
     photoInterval = ceiling(photoInterval)
     flightSpeedMs = groundAllowedOffset / photoInterval
     flight.speed.kmh = flightSpeedMs*3.6
-    cat(paste0("Speed lowered to ", flight.speed.kmh, "km/h to round up photo interval time\n"))
+    warning(paste0("Speed lowered to ", flight.speed.kmh, "km/h to round up photo interval time\n"))
   }
 
   params = methods::new("Flight Parameters")

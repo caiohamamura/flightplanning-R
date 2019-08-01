@@ -28,6 +28,9 @@ time, it will be splitted into smaller missions.}
 
 \item{starting.point}{numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1}
 }
+\value{
+A data frame with the waypoints calculated for the flight plan
+}
 \description{
 Function to generate Litchi csv flight plan
 }
