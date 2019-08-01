@@ -1,7 +1,7 @@
 Package: flightplanning
 Type: Package
 Title: UAV Flight Planning
-Version: 0.7.1
+Version: 0.7.2
 Authors@R: c(
   person("Caio", "Hamamura", email = "caiohamamura@gmail.com", role = c("aut", "cre")),
   person("Danilo Roberti Alves de", "Almeida", email = "daniloflorestas@gmail.com", role = c("aut")),
