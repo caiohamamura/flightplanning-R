@@ -6,6 +6,8 @@ matrix:
     env: BADGE=linux
   - os: osx
     env: BADGE=osx
+    env: LD_LIBRARY_PATH=" /opt/local/lib:$LD_LIBRARY_PATH"
+    env: CPATH="/opt/local/include:$CPATH"
 
 
 addons:
