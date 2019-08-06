@@ -17,7 +17,7 @@ addons:
       - libproj-dev
   homebrew:
     packages:
-      - gdal2
+      - gdal
 
 # Code coverage
 r_packages:
