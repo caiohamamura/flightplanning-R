@@ -15,6 +15,9 @@ addons:
       - gdal-bin
       - libgdal1-dev
       - libproj-dev
+  homebrew:
+    packages:
+      - gdal2
 
 # Code coverage
 r_packages:
