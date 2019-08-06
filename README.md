@@ -56,9 +56,7 @@ This package was developed by author and its contributors which helped providing
 ## Example
 ``` R
 # Install and load the package
-install.packages("devtools")
-require(devtools)
-install_github("caiohamamura/flightplanning-R", "v0.7.1")
+install.packages("flightplanning")
 library(flightplanning)
 
 params = flight.parameters(height=100,
