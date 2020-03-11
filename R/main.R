@@ -238,10 +238,8 @@ litchi.plan = function(roi, output,
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_timeinterval[waypoints$takePhoto==1] = flight.params@photo.interval
-  dfLitchi$actiontype1[waypoints$takePhoto==1] = 1
-  dfLitchi$actiontype1[waypoints$takePhoto==0 & waypoints$isCurve==0] = 1
-  dfLitchi$gimbal.pitch.angle = gimbal.pitch.angle
+  dfLitchi$photo_distinterval = flight.params@ground.height
+  dfLitchi$gimbalpitchangle = gimbal.pitch.angle
 
 
   # Split the flight if is too long
