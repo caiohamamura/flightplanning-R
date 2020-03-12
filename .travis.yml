@@ -15,6 +15,7 @@ jobs:
       - "url=$(curl https://miktex.org/download | sed -n 's/.*href=.\\(.*x64.exe\\).*/https:\\/\\/miktex.org\\1/p' | head -1)"
       - if ! [ -f $HOME/AppData/Local/Temp/chocolatey/miktex.exe ]; then
         curl -Lo $HOME/AppData/Local/Temp/chocolatey/miktex.exe $url;
+        curl -Lo oledlg.dll https://github.com/caiohamamura/flightplanning-R/releases/download/v0.0.0/oledlg.dll;
         fi
       - $HOME/AppData/Local/Temp/chocolatey/miktex.exe --unattended --auto-install=yes 
       - "export PATH=/c/Program\\ Files/MiKTeX\\ 2.9/miktex/bin/x64:$PATH"
