@@ -4,6 +4,7 @@ flightplanning-R
 [![Build Status](https://travis-ci.com/caiohamamura/flightplanning-R.svg)](https://travis-ci.com/caiohamamura/flightplanning-R)
 [![codecov](https://codecov.io/gh/caiohamamura/flightplanning-R/branch/master/graph/badge.svg)](https://codecov.io/gh/caiohamamura/flightplanning-R)
 ![license](https://img.shields.io/badge/license-MIT-green.svg) 
+![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/radarBoxplot)
 
 An R package for generating UAV flight plans, specially for Litchi.
 
