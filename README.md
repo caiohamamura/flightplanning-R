@@ -8,6 +8,7 @@ flightplanning-R
 
 An R package for generating UAV flight plans, specially for Litchi.
 
+<img src="man/images/MANEJO_4.0_alta_velocidade.gif" alt="Animation of drone taking photos along the flight plan" align="center"/>
 
 ## Installation
 
