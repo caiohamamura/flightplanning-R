@@ -3,7 +3,7 @@ env:
   - PKGNAME=flightplanning
 jobs:
   include:
-  - r: release
+  - r: oldrel
     os: linux
     env: BADGE=linux
   - os: osx
