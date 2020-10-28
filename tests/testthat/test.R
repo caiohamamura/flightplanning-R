@@ -146,7 +146,7 @@ test_that("Shutter speed calculation is correct", {
 
 
 test_that("Litchi plan outputs the csv file", {
-  data(exampleBoundary)
+  exampleBoundary = readOGR(system.file("extdata", "exampleBoundary.shp", package="flightplanning"), "exampleBoundary")
   outPath = tempfile(fileext=".csv")
 
   params = flight.parameters(
@@ -166,7 +166,7 @@ test_that("Litchi plan outputs the csv file", {
 
 
 test_that("Different starting points are working", {
-  data(exampleBoundary)
+  exampleBoundary = readOGR(system.file("extdata", "exampleBoundary.shp", package="flightplanning"), "exampleBoundary")
   outPath = tempfile(fileext=".csv")
 
   params = flight.parameters(
@@ -196,7 +196,7 @@ test_that("Different starting points are working", {
 
 
 test_that("Different flight line angles are working", {
-  data(exampleBoundary)
+  exampleBoundary = readOGR(system.file("extdata", "exampleBoundary.shp", package="flightplanning"), "exampleBoundary")
   outPath = tempfile(fileext=".csv")
 
   params = flight.parameters(
@@ -233,7 +233,7 @@ test_that("Did not provide legal ROI", {
 
 test_that("ROI is not in a metric projection", {
   outPath = tempfile(fileext=".csv")
-  data(exampleBoundary)
+  exampleBoundary = readOGR(system.file("extdata", "exampleBoundary.shp", package="flightplanning"), "exampleBoundary")
   roi = exampleBoundary
   roi = sp::spTransform(roi, "+init=epsg:4326")
   expect_error( litchi.plan(roi, outPath, NA) )
@@ -241,7 +241,7 @@ test_that("ROI is not in a metric projection", {
 
 
 test_that("Did not provide Flight Parameters", {
-  data(exampleBoundary)
+  exampleBoundary = readOGR(system.file("extdata", "exampleBoundary.shp", package="flightplanning"), "exampleBoundary")
   outPath = tempfile(fileext=".csv")
   expect_error( litchi.plan(exampleBoundary, outPath, NA) )
 })
@@ -249,7 +249,7 @@ test_that("Did not provide Flight Parameters", {
 
 test_that("Break waypoints too far", {
   outPath = tempfile(fileext=".csv")
-  data(exampleBoundary)
+  exampleBoundary = readOGR(system.file("extdata", "exampleBoundary.shp", package="flightplanning"), "exampleBoundary")
   params = flight.parameters(
     gsd = 4,
     side.overlap = 0,
@@ -267,7 +267,7 @@ test_that("Break waypoints too far", {
 
 test_that("Break flight if exceeds max flight time", {
   outPath = tempfile(fileext=".csv")
-  data(exampleBoundary)
+  exampleBoundary = readOGR(system.file("extdata", "exampleBoundary.shp", package="flightplanning"), "exampleBoundary")
   params = flight.parameters(
     gsd = 4,
     side.overlap = 0,

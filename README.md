@@ -94,7 +94,11 @@ params
 ## [1] 2
 
 # Load example SpatialDataFrame polygon
-data(exampleBoundary)
+exampleBoundary = readOGR(
+                          system.file("extdata", 
+                                      "exampleBoundary.shp", 
+                                      package="flightplanning"), 
+                          "exampleBoundary")
 
 # Set the output
 output = "output.csv"

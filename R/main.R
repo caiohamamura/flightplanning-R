@@ -29,7 +29,14 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #'
 #' @examples
 #' library(flightplanning)
-#' data(exampleBoundary)
+#' library(rgdal)
+#'
+#' exampleBoundary = readOGR(
+#'                           system.file("extdata",
+#'                                       "exampleBoundary.shp",
+#'                                       package="flightplanning"
+#'                                      ),
+#'                           "exampleBoundary")
 #' outPath = tempfile(fileext=".csv")
 #'
 #' flight.params = flight.parameters(
@@ -229,7 +236,7 @@ litchi.plan = function(roi, output,
   finalHeading[lngDiff > 0] = 90-headDegree[lngDiff > 0]
 
   # Set parameters of the flight in the CSV
-  dfLitchi = flightplanning::litchi
+  dfLitchi = read.csv(system.file("extdata/litchi.csv", package = "flightplanning"))
   dfLitchi = dfLitchi[rep(1, length(lats)),]
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs

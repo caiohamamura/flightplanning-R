@@ -4,9 +4,16 @@
 \alias{litchi.plan}
 \title{Function to generate Litchi csv flight plan}
 \usage{
-litchi.plan(roi, output, flight.params, gimbal.pitch.angle = -90,
-  flight.lines.angle = -1, max.waypoints.distance = 2000,
-  max.flight.time = 15, starting.point = 1)
+litchi.plan(
+  roi,
+  output,
+  flight.params,
+  gimbal.pitch.angle = -90,
+  flight.lines.angle = -1,
+  max.waypoints.distance = 2000,
+  max.flight.time = 15,
+  starting.point = 1
+)
 }
 \arguments{
 \item{roi}{range of interest loaded as an OGR layer, must be in
@@ -43,7 +50,14 @@ the function will already work with this feature.
 }
 \examples{
 library(flightplanning)
-data(exampleBoundary)
+library(rgdal)
+
+exampleBoundary = readOGR(
+                          system.file("extdata",
+                                      "exampleBoundary.shp",
+                                      package="flightplanning"
+                                     ),
+                          "exampleBoundary")
 outPath = tempfile(fileext=".csv")
 
 flight.params = flight.parameters(

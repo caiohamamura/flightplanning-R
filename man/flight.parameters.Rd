@@ -4,9 +4,16 @@
 \alias{flight.parameters}
 \title{Function to calculate flight parameters}
 \usage{
-flight.parameters(height = NA, gsd = NA, focal.length35 = 20,
-  image.width.px = 4000, image.height.px = 3000, side.overlap = 0.8,
-  front.overlap = 0.8, flight.speed.kmh = 54)
+flight.parameters(
+  height = NA,
+  gsd = NA,
+  focal.length35 = 20,
+  image.width.px = 4000,
+  image.height.px = 3000,
+  side.overlap = 0.8,
+  front.overlap = 0.8,
+  flight.speed.kmh = 54
+)
 }
 \arguments{
 \item{height}{target flight height, default NA}
