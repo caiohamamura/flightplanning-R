@@ -13,10 +13,11 @@ jobs:
     install:
       - choco install -y r --version 3.6.3
       - choco install -y rtools --version 3.5.0.4
+      - "url=$(curl https://miktex.org/download | sed -n 's/.*href=.\\(.*x64.exe\\).*/https:\\/\\/miktex.org\\1/p' | head -1)"
       - if ! [ -f $HOME/AppData/Local/Temp/chocolatey/miktex.exe ]; then
-       curl -Lo $HOME/AppData/Local/Temp/chocolatey/miktex.exe $url;
-       curl -Lo oledlg.dll https://github.com/caiohamamura/flightplanning-R/releases/download/v0.0.0/oledlg.dll;
-      fi
+        curl -Lo $HOME/AppData/Local/Temp/chocolatey/miktex.exe $url;
+        fi
+      - curl -Lo oledlg.dll https://github.com/caiohamamura/flightplanning-R/releases/download/v0.0.0/oledlg.dll;
       - $HOME/AppData/Local/Temp/chocolatey/miktex.exe --unattended --auto-install=yes
       - "export PATH=/c/Program\\ Files/MiKTeX/miktex/bin/x64:$PATH"
       - choco install -y pandoc
