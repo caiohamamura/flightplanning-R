@@ -68,7 +68,7 @@ deploy:
   token:
     secure: CejHQ8oRDZQdCNfTkCo/iA1kLw+eZ+UP3pt2dIgGU0R5WKAg4thrGlFnZdl7rI8for6Tm2ZYG7qZNZI3xjYVkHOutjhI3dF0aAkzhzrOzecO28zalapUjuNt6qPt3DwCYiD1g9JAO6pMQ/XyJkjHSCsr6HT8GQRthmrAONAH7VeZ7r+RFBrAZUZYn4ZAoMfybxV0QIaKpT+YPMYAc5S2bputezP0HJ96+zj9dar1TjATtNgjsBegSvMANJEWbEwWaSY71F00GBwY4cjg37t3PtaQHMv8TBuWWpa7evesChvCeBa3KTLcqK2KVvT5GBFVrPXAqSjJt8Djf26REZb91ALnyJIDOTCGClyBIFQrbNVhY/tabndU+WOFQ1LMLKxtuxFwXr2j8DIr4t4zd2Nq26pMWdMvoYjdqUjqhITPeLUKyjO5SHmtg/8OqrEgNmCjIwBaocBMkqnzu4It1VfJNzPSN2AL1hUKm0jofZA7GyJl+QB9sZkQox7eOopSDLt1UpoEArAeslHvZdr0GU8YslkQM9LnYMQtmpknN+Tv6lHPp1WAVf4uazsw8JMkd7WOVEmT1XvqAVa0P3S8MXNXFY6UGduzFdmXv8zDUs4EjwG2R9FpTtVZZXdUeZ3ugq5jKbjOjQLyCMmfyvZ6WwVsfTXylgyI8L/jTa/bYunFaJE=
   file_glob: true
-  file: ${PKGNAME}_${PKGVERSION}*
+  file: ${PKGNAME}_${PKGVERSION}_${TRAVIS_OS_NAME}*
   skip_cleanup: true
   on:
     repo: caiohamamura/flightplanning-R
