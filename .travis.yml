@@ -1,6 +1,3 @@
-env:
-  global:
-  - PKGNAME=flightplanning
 jobs:
   include:
   - r: oldrel
@@ -9,10 +6,15 @@ jobs:
   - os: osx
     env: BADGE=osx
   - os: windows
+    env:
+      - TRAVIS_R_VERSION=4.0.3
     language: bash
     install:
-      - choco install -y r --version 3.6.3
+      - R_MAJOR=${TRAVIS_R_VERSION:0:(-2)}
+      - echo ${R_MAJOR}
+      - choco install -y r --version ${TRAVIS_R_VERSION}
       - choco install -y rtools --version 3.5.0.4
+      - choco install -y ccache
       - "url=$(curl https://miktex.org/download | sed -n 's/.*href=.\\(.*x64.exe\\).*/https:\\/\\/miktex.org\\1/p' | head -1)"
       - if ! [ -f $HOME/AppData/Local/Temp/chocolatey/miktex.exe ]; then
         curl -Lo $HOME/AppData/Local/Temp/chocolatey/miktex.exe $url;
@@ -23,12 +25,14 @@ jobs:
       - choco install -y pandoc
       - pandoc --version
       - pdflatex --version
-      - "export PATH=/c/Program\\ Files/R/R-3.6.3/bin/x64:/c/Rtools/bin:/c/Rtools/mingw_64/bin:$PATH"
-      - mkdir -p ${HOME}/Documents/R/win-library/3.6
-      - export R_LIBS_USER=${HOME}/Documents/R/win-library/3.6
+      - "export PATH=/c/Program\\ Files/R/R-${TRAVIS_R_VERSION}/bin/x64:/c/Rtools/bin:/c/Rtools/mingw_64/bin:$PATH"
+      - which Rscript
+      - "export LD_LIBRARY_PATH=/c/Program\\ Files/R/R-${TRAVIS_R_VERSION}/bin/x64:$LD_LIBRARY_PATH"
+      - mkdir -p ${HOME}/Documents/R/win-library/${R_MAJOR}
+      - export R_LIBS_USER=${HOME}/Documents/R/win-library/${R_MAJOR}
       - echo 'options(repos = c(CRAN = "https://cloud.r-project.org"))' > .Rprofile
       - Rscript -e 'install.packages(c("remotes"));if (!all(c("remotes") %in% installed.packages())) { q(status = 1, save = "no")}'
-      - "Rscript -e 'deps <- remotes::dev_package_deps(dependencies = NA);remotes::install_deps(dependencies = TRUE);if (!all(deps$package %in% installed.packages())) { message(\"missing: \", paste(setdiff(deps$package, installed.packages()), collapse=\", \")); q(status = 1, save = \"no\")}'"
+      - "Rscript -e 'deps <- remotes::dev_package_deps(dependencies = NA);remotes::install_deps(dependencies = TRUE, INSTALL_opts=c(\"--no-multiarch\"));if (!all(deps$package %in% installed.packages())) { message(\"missing: \", paste(setdiff(deps$package, installed.packages()), collapse=\", \")); q(status = 1, save = \"no\")}'"
 addons:
   apt:
     packages:
@@ -52,7 +56,9 @@ cache:
 before_install:
 - mkdir $HOME/.R && echo -e 'CXX_STD = CXX14\n\nVER=\nCCACHE=ccache\nCC=$(CCACHE)
   gcc$(VER) -std=gnu99\nCXX=$(CCACHE) g++$(VER)\nC11=$(CCACHE) g++$(VER)\nC14=$(CCACHE)
-  g++$(VER)\nFC=$(CCACHE) gfortran$(VER)\nF77=$(CCACHE) gfortran$(VER)' > $HOME/.R/Makevars
+  g++$(VER)\nFC=$(CCACHE) gfortran$(VER)\nF77=$(CCACHE) gfortran$(VER)\n
+  CXXFLAGS = -g -O2 -Wall -pedantic -Wconversion -Wno-sign-conversion -L"C:/Program Files/R/R-${TRAVIS_R_VERSION}/bin/x64"' > $HOME/.R/Makevars
+- cat $HOME/.R/Makevars
 script:
 - R CMD build .
 - R CMD check *tar.gz --as-cran
@@ -61,14 +67,27 @@ after_success:
 - Rscript -e 'library(covr); codecov()'
 before_deploy:
 - 'export PKGVERSION=$(sed -n ''/^Version:/s/Version: \(.*\)/\1/p'' DESCRIPTION)'
-- echo "Upload file glob is $(echo $PKGNAME)_${PKGVERSION}*"
+- 'export PKGNAME=$(sed -n ''s/Package: //p'' DESCRIPTION)'
 - ls
+- theGlob=${PKGNAME}_${PKGVERSION}*
+- for file in $(ls ${theGlob}); do
+    if [ "$file" != "${PKGNAME}_${PKGVERSION}.tar.gz" ]; then
+      echo "Will be moved!";
+      EXTENSION=${file##*.};
+      newname="${PKGNAME}_${PKGVERSION}_${TRAVIS_CPU_ARCH}_${TRAVIS_OS_NAME}.${EXTENSION}";
+      if [ "$EXTENSION" = "gz" ]; then
+        newname="${PKGNAME}_${PKGVERSION}_${TRAVIS_CPU_ARCH}_${TRAVIS_OS_NAME}.tar.gz";
+      fi;
+      echo $file; echo $newname;
+      mv -- $file ${newname};
+    fi;
+  done
 deploy:
   provider: releases
   token:
     secure: CejHQ8oRDZQdCNfTkCo/iA1kLw+eZ+UP3pt2dIgGU0R5WKAg4thrGlFnZdl7rI8for6Tm2ZYG7qZNZI3xjYVkHOutjhI3dF0aAkzhzrOzecO28zalapUjuNt6qPt3DwCYiD1g9JAO6pMQ/XyJkjHSCsr6HT8GQRthmrAONAH7VeZ7r+RFBrAZUZYn4ZAoMfybxV0QIaKpT+YPMYAc5S2bputezP0HJ96+zj9dar1TjATtNgjsBegSvMANJEWbEwWaSY71F00GBwY4cjg37t3PtaQHMv8TBuWWpa7evesChvCeBa3KTLcqK2KVvT5GBFVrPXAqSjJt8Djf26REZb91ALnyJIDOTCGClyBIFQrbNVhY/tabndU+WOFQ1LMLKxtuxFwXr2j8DIr4t4zd2Nq26pMWdMvoYjdqUjqhITPeLUKyjO5SHmtg/8OqrEgNmCjIwBaocBMkqnzu4It1VfJNzPSN2AL1hUKm0jofZA7GyJl+QB9sZkQox7eOopSDLt1UpoEArAeslHvZdr0GU8YslkQM9LnYMQtmpknN+Tv6lHPp1WAVf4uazsw8JMkd7WOVEmT1XvqAVa0P3S8MXNXFY6UGduzFdmXv8zDUs4EjwG2R9FpTtVZZXdUeZ3ugq5jKbjOjQLyCMmfyvZ6WwVsfTXylgyI8L/jTa/bYunFaJE=
   file_glob: true
-  file: ${PKGNAME}_${PKGVERSION}_${TRAVIS_OS_NAME}*
+  file: ${theGlob}
   skip_cleanup: true
   on:
     repo: caiohamamura/flightplanning-R
