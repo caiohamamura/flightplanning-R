@@ -147,13 +147,23 @@ litchi.plan = function(roi, output,
 
   #
   #
-  wktLines = paste(apply(waypoints, 1, paste, collapse=" "), collapse=", ")
-  wktLines = paste("LINESTRING(", wktLines,")")
-  gLines = rgeos::readWKT(wktLines, p4s = roi@proj4string)
-  inter = rgeos::gIntersection(rgeos::gBuffer(roi, width = flightLineDistance), gLines)
-  nLines = length(inter@lines[[1]]@Lines)
+#  wktLines = paste(apply(waypoints, 1, paste, collapse=" "), collapse=", ")
+#  wktLines = paste("LINESTRING(", wktLines,")")
+#  gLines = rgeos::readWKT(wktLines, p4s = roi@proj4string)
+#  inter = rgeos::gIntersection(rgeos::gBuffer(roi, width = flightLineDistance), gLines)
+#  nLines = length(inter@lines[[1]]@Lines)
 
-  flightLines = t(sapply(inter@lines[[1]]@Lines, function(x) x@coords))
+#  flightLines = t(sapply(inter@lines[[1]]@Lines, function(x) x@coords))
+
+# RSB
+  glist <- vector(mode="list", length=nrow(waypoints)-1)
+  for (i in seq_along(glist)) glist[[i]] <- Lines(list(Line(waypoints[c(i, (i+1)),])), ID=as.character(i))
+  gLines <- SpatialLines(glist, proj4string=slot(roi, "proj4string"))
+  inter = rgeos::gIntersection(rgeos::gBuffer(roi, width = flightLineDistance), gLines, byid=TRUE)
+  nLines <- length(inter)
+  flightLines <- t(sapply(slot(inter, "lines"), function(x) slot(slot(x,  "Lines")[[1]], "coords")))
+
+# RSB
   flightLines = flightLines[,c(1,3,2,4)]
 
 
