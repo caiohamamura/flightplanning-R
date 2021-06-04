@@ -1,6 +1,6 @@
 MIN_PHOTO_INTERVAL = 2
 DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
-
+MAX_WAYPOINTS = 99
 
 #'  Function to generate Litchi csv flight plan
 #'
@@ -208,24 +208,33 @@ litchi.plan = function(roi, output,
   }
   waypoints = wptsMatrix
 
+
   # Break if distance greater than the maxWaypointDistance
-  waypointsXY = waypoints[, c("x", "y")]
-  distances = sqrt(diff(waypoints$x)**2 + diff(waypoints$y)**2)
-  breakIdx = distances > max.waypoints.distance
+  # A single pass only adds one intermediate waypoint even if a leg is longer than max, but more than one intermediate point may be needed.
+  # We can iterate this process as a temp fix but we may be adding more intermediate waypoints than strictly necessary--e.g. when 2 intermediate points will suffice we will get 3.
+  retest = TRUE
+  while (retest) {
+    waypointsXY = waypoints[, c("x", "y")]
+    distances = sqrt(diff(waypoints$x)**2 + diff(waypoints$y)**2)
+    breakIdx = distances > max.waypoints.distance
 
-  newSize = nrow(waypoints) + sum(breakIdx)
-  if (newSize != nrow(waypoints)) {
-    midpoints = (waypointsXY[breakIdx,] + waypointsXY[-1,][breakIdx,])/2
-    waypoints2 = data.frame(x = numeric(newSize),
-                            y = numeric(newSize),
-                            isCurve = FALSE,
-                            takePhoto = TRUE)
+    newSize = nrow(waypoints) + sum(breakIdx)
+    if (newSize != nrow(waypoints)) {
+      midpoints = (waypointsXY[breakIdx,] + waypointsXY[-1,][breakIdx,])/2
+      waypoints2 = data.frame(x = numeric(newSize),
+                              y = numeric(newSize),
+                              isCurve = FALSE,
+                              takePhoto = TRUE)
 
-    pos = seq_along(breakIdx)[breakIdx]
-    idx = pos + order(pos)
-    waypoints2[idx,1:2] = midpoints
-    waypoints2[-idx,] = waypoints
-    waypoints = waypoints2
+      pos = seq_along(breakIdx)[breakIdx]
+      idx = pos + order(pos)
+      waypoints2[idx,1:2] = midpoints
+      waypoints2[-idx,] = waypoints
+      waypoints = waypoints2
+    }
+    else {
+      retest = FALSE
+    }
   }
 
 
@@ -255,7 +264,8 @@ litchi.plan = function(roi, output,
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_distinterval = flight.params@ground.height
+  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs
+  dfLitchi$photo_timeinterval = flight.params@photo.interval
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
 
 
@@ -266,9 +276,9 @@ litchi.plan = function(roi, output,
   finalSize = nrow(dfLitchi)
   totalFlightTime = flightTime[finalSize]
   dfLitchi$split = 1
-  if (totalFlightTime > max.flight.time) {
+  if ((totalFlightTime > max.flight.time) || (nrow(waypoints) > MAX_WAYPOINTS)) {
     indexes = seq_len(finalSize)
-    nBreaks = ceiling(totalFlightTime/max.flight.time)
+    nBreaks = max(ceiling(totalFlightTime/max.flight.time), ceiling(nrow(waypoints)/MAX_WAYPOINTS))
     breaks = seq(0, flightTime[finalSize], length.out = nBreaks+1)[c(-1, -nBreaks-1)]
     endWaypointsIndex = indexes[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
     endWaypoints = flightTime[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
@@ -278,10 +288,16 @@ litchi.plan = function(roi, output,
 
     dfLitchi$split = rep(1:nBreaks, diff(c(0, waypointsBreak, finalSize)))
     splits = split.data.frame(dfLitchi, f = dfLitchi$split)
-    message("Your flight was splitted in ", length(splits), " splits,
-because the total time would be ", round(totalFlightTime, 2), " minutes.")
-    message("They were saved as:")
-    first = substr(output, 1, nchar(output)-4)
+    if (nrow(waypoints) > MAX_WAYPOINTS) {
+      message("Your flight was split into ", length(splits), " sub-flights,
+because the number of waypoints ", nrow(waypoints), " exceeds the maximum of ", MAX_WAYPOINTS, ".")
+    }
+    else {
+      message("Your flight was split into ", length(splits), " sub-flights,
+because the total flight time of ", round(totalFlightTime, 2), " minutes exceeds the max of ", max.flight.time, " minutes.")
+    }
+    message("The flights were saved as:")
+    first = paste(substr(output, 1, nchar(output)-4), "_")
     second = substr(output, nchar(output)-3, nchar(output))
     for (dataSplit in splits) {
       i = dataSplit[1, ]$split
@@ -289,7 +305,7 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
       write.csv(dataSplit[,-ncol(dataSplit)], output2, row.names = FALSE)
       message(output2)
     }
-    output2 = paste0(first, "_entire", second)
+    output2 = paste0(first, "entire", second)
     write.csv(dfLitchi, output2, row.names = FALSE)
     message("The entire flight plan was saved as:")
     message(output2)
@@ -313,9 +329,14 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
   message("Photo interval:    ", appendLF = FALSE)
   message(flight.params@photo.interval, appendLF = FALSE)
   message(" s")
+  message("Photo distance:    ", appendLF = FALSE)
+  message(flight.params@photo.interval * flight.params@flight.speed.kmh / 3.6, appendLF = FALSE)
+  message(" m")
   message("Flight speed:      ", appendLF = FALSE)
   message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
   message(" km/h")
+  message("Total number of waypoints", appendLF = FALSE)
+  message(nrow(waypoints))
   message("Flight lines angle: ", appendLF = FALSE)
   message(round(alpha, 4))
   message('Total flight time: ', appendLF = FALSE)
