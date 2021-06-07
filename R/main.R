@@ -61,7 +61,7 @@ MAX_WAYPOINTS = 99
 litchi.plan = function(roi, output,
                        flight.params, gimbal.pitch.angle = -90,
                        flight.lines.angle = -1, max.waypoints.distance = 2000,
-                       max.flight.time = 15, starting.point = 1) {
+                       max.flight.time = 15, starting.point = 1, launch = list(0, 0)) {
   # Check parameters
   if (class(roi)[1] != "SpatialPolygonsDataFrame")
     stop("ROI is not a valid polygon layer")
@@ -111,6 +111,13 @@ litchi.plan = function(roi, output,
 
 
   # Switch position of the first point
+  if (starting.point == 0) {
+    # In this case we will automatically pick the best starting point
+    # TODO check if launch is valid and not (0,0)
+    # TODO figure out closest corner in shape to launch point and then set starting.point to 1-4
+    starting.point == 1
+  }
+
   if (starting.point == 2) {
     yHeights = c(heightPHalf, heightMHalf)
   } else if (starting.point == 3) {
@@ -209,6 +216,17 @@ litchi.plan = function(roi, output,
   waypoints = wptsMatrix
 
 
+  # Check if launch point has been specified before inserting it as way-point 1
+  if ((launch[1] == 0) && (launch[2] == 0)) {
+    message("No launch point specified")
+  } else {
+    launchdf = data.frame(launch[1], launch[2], FALSE, FALSE)
+    names(launchdf) = c("x", "y", "isCurve", "takePhoto")
+    tempdf = rbind(launchdf, waypoints)
+    waypoints = tempdf
+  }
+
+
   # Break if distance greater than the maxWaypointDistance
   # A single pass only adds one intermediate waypoint even if a leg is longer than max, but more than one intermediate point may be needed.
   # We can iterate this process as a temp fix but we may be adding more intermediate waypoints than strictly necessary--e.g. when 2 intermediate points will suffice we will get 3.
@@ -260,6 +278,7 @@ litchi.plan = function(roi, output,
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
   dfLitchi$altitude.m. = flight.params@height
+  dfLitchi$altitudemode = 1
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
@@ -267,6 +286,8 @@ litchi.plan = function(roi, output,
   dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs
   dfLitchi$photo_timeinterval = flight.params@photo.interval
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
+  dfLitchi$actiontype1 = 5
+  dfLitchi$actionparam1 = gimbal.pitch.angle
 
 
   # Split the flight if is too long
@@ -297,7 +318,7 @@ because the number of waypoints ", nrow(waypoints), " exceeds the maximum of ", 
 because the total flight time of ", round(totalFlightTime, 2), " minutes exceeds the max of ", max.flight.time, " minutes.")
     }
     message("The flights were saved as:")
-    first = paste(substr(output, 1, nchar(output)-4), "_")
+    first = paste0(substr(output, 1, nchar(output)-4), "_")
     second = substr(output, nchar(output)-3, nchar(output))
     for (dataSplit in splits) {
       i = dataSplit[1, ]$split
