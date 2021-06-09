@@ -115,6 +115,7 @@ litchi.plan = function(roi, output,
     # In this case we will automatically pick the best starting point
     # TODO check if launch is valid and not (0,0)
     # TODO figure out closest corner in shape to launch point and then set starting.point to 1-4
+    # But until then, just use and set default value
     starting.point == 1
   }
 
@@ -447,16 +448,22 @@ flight.parameters = function(
   groundAllowedOffset = groundHeight - groundHeightOverlap
   photoInterval = groundAllowedOffset / flightSpeedMs
   if (photoInterval < MIN_PHOTO_INTERVAL) {
-    photoInterval = 2
+    photoInterval = MIN_PHOTO_INTERVAL
     flightSpeedMs = groundAllowedOffset / photoInterval
-    flight.speed.kmh = flightSpeedMs*3.6
+    flight.speed.kmh = flightSpeedMs * 3.6
     warning(paste0("Speed had to be lowered because frequency of photos would be too high
-  New speed: ", flight.speed.kmh, "km/h"))
-  } else if ((photoInterval %% 1) > 1e-4) {
-    photoInterval = ceiling(photoInterval)
+        New speed: ", flight.speed.kmh, " km/h"))
+    # Repeat as a Warning message because warnings are not always getting through
+    message("WARNING: Speed had to be lowered because frequency of photos would be too high
+        New speed: ", flight.speed.kmh, " km/h")
+  } else if ((photoInterval %% .1) > 1e-4) {
+    # Allow 0.1s resolution because integer seconds blocks useful drone speeds
+    photoInterval = ceiling(photoInterval * 10) / 10
     flightSpeedMs = groundAllowedOffset / photoInterval
     flight.speed.kmh = flightSpeedMs*3.6
-    warning(paste0("Speed lowered to ", flight.speed.kmh, "km/h to round up photo interval time\n"))
+    warning(paste0("Speed lowered to ", flight.speed.kmh, " km/h to round up photo interval time to ", photoInterval, " seconds"))
+    # Repeat as a Warning message because warnings are not always getting through
+    message("WARNING: Speed lowered to ", flight.speed.kmh, " km/h to round up photo interval time to ", photoInterval, " seconds")
   }
 
   params = methods::new("Flight Parameters")
