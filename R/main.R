@@ -260,6 +260,7 @@ litchi.plan = function(roi, output,
   transform = rgdal::rawTransform(roi@proj4string@projargs, wgs84, n=nrow(waypoints), x=waypoints[,1], y=waypoints[,2])
   lats = transform[[2]]
   lngs = transform[[1]]
+  photos = waypoints[,4]
   graphics::plot(waypoints[,1:2])
   graphics::polygon(roi@polygons[[1]]@Polygons[[1]]@coords)
 
@@ -283,8 +284,8 @@ litchi.plan = function(roi, output,
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs
-  dfLitchi$photo_timeinterval = flight.params@photo.interval
+  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
+  dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
   dfLitchi$actiontype1 = 5
   dfLitchi$actionparam1 = gimbal.pitch.angle
@@ -401,7 +402,8 @@ flight.parameters = function(
   image.height.px = 3000,
   side.overlap = 0.8,
   front.overlap = 0.8,
-  flight.speed.kmh = 54) {
+  flight.speed.kmh = 54,
+  max.gsd = 0) {
 
   if (is.na(gsd) == is.na(height)) {
     stop("You must specify either gsd or height!")
@@ -413,6 +415,14 @@ flight.parameters = function(
     mult.factor = (height / focal.length35)
     diag.ground = DIAG_35MM * mult.factor
     gsd = diag.ground / image.diag.px * 100
+    if ((max.gsd != 0) && (gsd > max.gsd)) {
+      height = height * max.gsd / gsd
+      message("GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height)
+      mult.factor = (height / focal.length35)
+      diag.ground = DIAG_35MM * mult.factor
+      gsd = diag.ground / image.diag.px * 100
+      message("Final GSD is ", gsd)
+    }
     groundWidth = image.width.px * gsd / 100
   } else {
     groundWidth = image.width.px * gsd / 100
