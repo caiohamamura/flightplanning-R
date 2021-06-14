@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Calculates the minimum oriented bounding box using the
-#' rotating claipers algorithm.
+#' rotating calipers algorithm.
 #' Credits go to Daniel Wollschlaeger <https://github.com/ramnathv>
 #'
 #' @param xy A matrix of xy values from which to calculate the minimum oriented
