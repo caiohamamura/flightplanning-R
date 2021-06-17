@@ -418,7 +418,9 @@ flight.parameters = function(
     gsd = diag.ground / image.diag.px * 100
     if ((max.gsd != 0) && (gsd > max.gsd)) {
       height = height * max.gsd / gsd
-      message("GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height)
+      warning(paste0("GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height))
+      # Repeat as a Warning message because warnings are not always getting through
+      message("WARNING: GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height)
       mult.factor = (height / focal.length35)
       diag.ground = DIAG_35MM * mult.factor
       gsd = diag.ground / image.diag.px * 100
