@@ -217,17 +217,6 @@ litchi.plan = function(roi, output,
   waypoints = wptsMatrix
 
 
-  # Check if launch point has been specified before inserting it as way-point 1
-  if ((launch[1] == 0) && (launch[2] == 0)) {
-    message("No launch point specified")
-  } else {
-    launchdf = data.frame(launch[1], launch[2], FALSE, FALSE)
-    names(launchdf) = c("x", "y", "isCurve", "takePhoto")
-    tempdf = rbind(launchdf, waypoints)
-    waypoints = tempdf
-  }
-
-
   # Break if distance greater than the maxWaypointDistance
   # A single pass only adds one intermediate waypoint even if a leg is longer than max, but more than one intermediate point may be needed.
   # We can iterate this process as a temp fix but we may be adding more intermediate waypoints than strictly necessary--e.g. when 2 intermediate points will suffice we will get 3.
@@ -254,6 +243,17 @@ litchi.plan = function(roi, output,
     else {
       retest = FALSE
     }
+  }
+
+
+  # Check if launch point has been specified before inserting it as way-point 1
+  if ((launch[1] == 0) && (launch[2] == 0)) {
+    message("No launch point specified")
+  } else {
+    launchdf = data.frame(launch[1], launch[2], FALSE, FALSE)
+    names(launchdf) = c("x", "y", "isCurve", "takePhoto")
+    tempdf = rbind(launchdf, waypoints)
+    waypoints = tempdf
   }
 
 
