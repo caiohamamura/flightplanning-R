@@ -96,6 +96,8 @@ litchi.plan = function(roi, output,
   # based on angle and width/height offsets
   # width offsets (between flightlines)
   nLines = ceiling(width / flightLineDistance) + 1
+  # Then need to update flightLineDistance to avoid offset/quantization errors
+  flightLineDistance = width / (nLines - 1)
   xWidths = (-nLines/2):(nLines/2) * flightLineDistance
   xWidths = rep(xWidths, each=2)
 
