@@ -249,13 +249,12 @@ litchi.plan = function(roi, output,
 
 
   # Check if launch point has been specified before inserting it as way-point 1
-  if ((launch[1] == 0) && (launch[2] == 0)) {
-    message("No launch point specified")
+  hasCustomLaunch = (launch[1] != 0) || (launch[2] != 0)
+  if (hasCustomLaunch) {
+    message("Launch point specified ", launch)
+    MAX_WAYPOINTS = MAX_WAYPOINTS - 1
   } else {
-    launchdf = data.frame(launch[1], launch[2], FALSE, FALSE)
-    names(launchdf) = c("x", "y", "isCurve", "takePhoto")
-    tempdf = rbind(launchdf, waypoints)
-    waypoints = tempdf
+    message("No launch point specified")
   }
 
 
@@ -293,6 +292,8 @@ litchi.plan = function(roi, output,
   dfLitchi$actiontype1 = 5
   dfLitchi$actionparam1 = gimbal.pitch.angle
 
+  message(dfLitchi)
+
 
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
@@ -313,11 +314,84 @@ litchi.plan = function(roi, output,
 
     dfLitchi$split = rep(1:nBreaks, diff(c(0, waypointsBreak, finalSize)))
     splits = split.data.frame(dfLitchi, f = dfLitchi$split)
+
+    if (hasCustomLaunch) {
+      p0x = launch[[1]][1]
+      p0y = launch[[2]][1]
+
+      overage = NULL
+
+      for (i in 1:length(splits)) {
+        mercator = rgdal::rawTransform(wgs84, roi@proj4string@projargs, n=length(splits[i]), x=splits[i]$latitude, y=splits[i]$longitude)
+        p1x = mercator[1, 1]
+        p1y = mercator[1, 2]
+        dx = p1x - p0x
+        dy = p1y - p0y
+        distance = sqrt(dx ** 2 + dy ** 2)        
+
+
+        interpPtsToAdd = floor(distance / max.waypoints.distance)
+        nPtsToAdd = 1 + interpPtsToAdd
+
+        overageSize = 0
+        if (!is.null(overage)) {
+          overageSize = length(overage)
+        }
+
+        ptsToAdd = rbind(splits[i][1:min(nrows(splits[i]), length(nPtsToAdd)),])
+        ptsToAdd$curvesize.m. <- 0
+        ptsToAdd$photo_distinterval <- 0
+        ptsToAdd$photo_timeinterval <- 0  
+
+        toConvert = data.frame(
+          lat = numeric(nPtsToAdd),
+          lon = numeric(nPtsToAdd),
+        )
+
+        toConvert[1,] = c(p0x, p1x)
+        if (nPtsToAdd > 1) {
+          for (j in 2:nPtsToAdd) {
+            message('b', j)
+            toConvert[j,] <- c(p0x + (j / nPtsToAdd) * dx, p0y + (j / nPtsToAdd) * dy)
+          }
+        }
+
+        wgs84 = rgdal::rawTransform(roi@proj4string@projargs, wgs84, n=length(toConvert), x=ptsToAdd[,1], y=ptsToAdd[,2])
+
+        ptsToAdd$latitude = wgs84[[1]]
+        ptsToAdd$longitude = wgs84[[2]]
+
+        dataSize = length(splits[i]) + overageSize + nPtsToAdd
+        lim = min(MAX_WAYPOINTS + 1, dataSize)
+        rem = 0
+        if (dataSize > MAX_WAYPOINTS + 1) {
+          rem = dataSize - (MAX_WAYPOINTS + 1)          
+        }
+
+        if (overageSize == 0) {
+          splits[i] = rbind(ptsToAdd, splits[i][1:lim,])
+        } else {
+          splits[i] = rbind(overage, ptsToAdd, splits[i][1:lim,])
+        }
+
+        if (rem > 0) {
+          overage = splits[i][lim + 1:length(splits[i]),]
+        } else {
+          overage = NULL
+        }
+      }
+
+      if (!is.null(overage)) {
+        splits[length(splits) + 1] = rbind(overage)
+      }
+    }
+
     if (nrow(waypoints) > MAX_WAYPOINTS) {
       message("Your flight was split into ", length(splits), " sub-flights,
 because the number of waypoints ", nrow(waypoints), " exceeds the maximum of ", MAX_WAYPOINTS, ".")
     }
     else {
+      # XXX flight time doesn't include custom launch point stuff
       message("Your flight was split into ", length(splits), " sub-flights,
 because the total flight time of ", round(totalFlightTime, 2), " minutes exceeds the max of ", max.flight.time, " minutes.")
     }
