@@ -2,6 +2,23 @@ MIN_PHOTO_INTERVAL = 2
 DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 MAX_WAYPOINTS = 99
 
+# Calculate distance in meters between two points
+earth.dist <- function (long1, lat1, long2, lat2)
+{
+  rad <- pi/180
+  a1 <- lat1 * rad
+  a2 <- long1 * rad
+  b1 <- lat2 * rad
+  b2 <- long2 * rad
+  dlon <- b2 - a2
+  dlat <- b1 - a1
+  a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+  c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+  R <- 6378.145
+  d <- R * c
+  return(d * 1000)
+}
+
 #'  Function to generate Litchi csv flight plan
 #'
 #'
@@ -249,13 +266,12 @@ litchi.plan = function(roi, output,
 
 
   # Check if launch point has been specified before inserting it as way-point 1
-  if ((launch[1] == 0) && (launch[2] == 0)) {
-    message("No launch point specified")
+  hasCustomLaunch = (launch[1] != 0) || (launch[2] != 0)
+  if (hasCustomLaunch) {
+    message("Launch point specified: ", launch[1], ',', launch[2])
+    MAX_WAYPOINTS = MAX_WAYPOINTS - 1
   } else {
-    launchdf = data.frame(launch[1], launch[2], FALSE, FALSE)
-    names(launchdf) = c("x", "y", "isCurve", "takePhoto")
-    tempdf = rbind(launchdf, waypoints)
-    waypoints = tempdf
+    message("No launch point specified")
   }
 
 
@@ -293,7 +309,6 @@ litchi.plan = function(roi, output,
   dfLitchi$actiontype1 = 5
   dfLitchi$actionparam1 = gimbal.pitch.angle
 
-
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
   distAcum = c(0,cumsum(dists))
@@ -313,11 +328,100 @@ litchi.plan = function(roi, output,
 
     dfLitchi$split = rep(1:nBreaks, diff(c(0, waypointsBreak, finalSize)))
     splits = split.data.frame(dfLitchi, f = dfLitchi$split)
+
+    if (hasCustomLaunch) {
+      p0x = launch[[1]][1]
+      p0y = launch[[2]][1]
+
+      message("adding custom launch point to submissions")
+
+      launch84 = rgdal::rawTransform(roi@proj4string@projargs, wgs84, as.integer(1), launch[[1]], launch[[2]])
+
+      overage = NULL
+
+      for (i in 1:length(splits)) {
+        message("starting ", i)
+        if (!is.null(overage)) {
+          message("setting ", i, " to ", "overage (", nrow(overage), ") and ", nrow(splits[[i]]))
+          splits[[i]] = rbind(overage, splits[[i]])
+        }
+
+        mercator = rgdal::rawTransform(wgs84, roi@proj4string@projargs, nrow(splits[[i]]), splits[[i]]$longitude, splits[[i]]$latitude)
+        p1x = mercator[[1]][1]
+        p1y = mercator[[2]][1]
+        dx = p1x - p0x
+        dy = p1y - p0y
+        distance = earth.dist(launch84[[1]][1], launch84[[2]][1], splits[[i]]$longitude[1], splits[[i]]$latitude[1])
+
+        interpPtsToAdd = floor(distance / max.waypoints.distance)
+        nPtsToAdd = 1 + interpPtsToAdd
+
+        message("adding ", nPtsToAdd, " points")
+
+        ptsToAdd = rbind(splits[[1]][1:nPtsToAdd,])
+        ptsToAdd$split <- i
+        ptsToAdd$curvesize.m. <- 0
+        ptsToAdd$photo_distinterval <- 0
+        ptsToAdd$photo_timeinterval <- 0
+
+        toConvert = data.frame(
+          lat = numeric(nPtsToAdd),
+          lon = numeric(nPtsToAdd)
+        )
+
+        toConvert[1,] = c(p0x, p0y)
+        if (nPtsToAdd > 1) {
+          for (j in 2:nPtsToAdd) {
+            toConvert[j,] <- c(p0x + ((j - 1) / nPtsToAdd) * dx, p0y + ((j - 1) / nPtsToAdd) * dy)
+          }
+        }
+
+        wgs84D = rgdal::rawTransform(roi@proj4string@projargs, wgs84, nrow(toConvert), toConvert$lat, toConvert$lon)
+
+        ptsToAdd$latitude = wgs84D[[2]]
+        ptsToAdd$longitude = wgs84D[[1]]
+
+        splitSize = nrow(splits[[i]])
+        totalSize = splitSize + nPtsToAdd
+        rem = 0
+        if (totalSize > MAX_WAYPOINTS + 1) {
+          rem = totalSize - (MAX_WAYPOINTS + 1)
+        }
+
+        if (rem > 0) {
+          message("setting overage to ", splitSize + 1 - rem, " : ", splitSize)
+          message(class(splits[[i]]))
+          message(splits[[i]][splitSize + 1 - rem:splitSize,])
+          message(colnames(splits[[i]]))
+          message(splits[[i]])
+          message(colnames(splits[[i]][splitSize + 1 - rem:splitSize,]))
+          message(rownames(splits[[i]][splitSize + 1 - rem:splitSize,]))
+          overage = rbind(splits[[i]][splitSize + 1 - rem:splitSize,])
+          message("overage has ", nrow(overage))
+          message(overage)
+          message(overage[splitSize + 1 - rem: splitSize,])
+        } else {
+          message("setting overage to NULL")
+          overage = NULL
+        }
+
+        message("setting ", i, " to ptsToAdd (", nrow(ptsToAdd), ") + splits 1 : ", splitSize - rem)
+        splits[[i]] = rbind(ptsToAdd, splits[[i]][1:splitSize - rem,])
+      }
+
+      if (!is.null(overage)) {
+        newIdx = length(splits) + 1
+        splits[[newIdx]] = rbind(overage)
+        splits[[newIdx]]$split = newIdx
+      }
+    }
+
     if (nrow(waypoints) > MAX_WAYPOINTS) {
       message("Your flight was split into ", length(splits), " sub-flights,
 because the number of waypoints ", nrow(waypoints), " exceeds the maximum of ", MAX_WAYPOINTS, ".")
     }
     else {
+      # XXX flight time doesn't include custom launch point stuff
       message("Your flight was split into ", length(splits), " sub-flights,
 because the total flight time of ", round(totalFlightTime, 2), " minutes exceeds the max of ", max.flight.time, " minutes.")
     }
