@@ -191,14 +191,16 @@ litchi.plan = function(roi, output,
     hasCurve = !anyNA(curve)
     if (hasCurve) {
       if (curve$before) {
-        wptsMatrix[mat_pos,] = c(curve[,1:2], TRUE, FALSE)
+        wptsMatrix[mat_pos,] = c(curve[1:2], TRUE, FALSE)
+        # wptsMatrix[mat_pos,] = c(curve[,1:2], TRUE, FALSE)
         mat_pos = mat_pos + 1
         wptsMatrix[mat_pos,] = c(waypoints[i, 1:2], FALSE, i %% 2 == 1)
         mat_pos = mat_pos + 1
       } else {
         wptsMatrix[mat_pos,] = c(waypoints[i, 1:2], FALSE, i %% 2 == 1)
         mat_pos = mat_pos + 1
-        wptsMatrix[mat_pos,] = cbind(curve[,1:2], TRUE, FALSE)
+        # wptsMatrix[mat_pos,] = cbind(curve[,1:2], TRUE, FALSE)
+        wptsMatrix[mat_pos,] = c(curve[1:2], TRUE, FALSE)
         mat_pos = mat_pos + 1
       }
     } else {
