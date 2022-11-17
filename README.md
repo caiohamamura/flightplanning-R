@@ -19,6 +19,11 @@ This package should be installed using the devtools.
 devtools::install_github("caiohamamura/flightplanning-R")
 ```
 
+## This fork
+
+* adopts the package to R >= 4.2.0 (backward compatible) - DONE
+* try to replace {rgdal}, {rgeos} and {sp} with {sf} - WIP
+
 ## Usage
 There are two main functions available:
  * `flight.parameters()`: this will calculate the flight parameters given desired settings for GSD/height, target overlap, flight speed and camera specifications.
