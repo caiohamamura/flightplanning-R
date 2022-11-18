@@ -295,6 +295,5 @@ test_that("Break flight if exceeds max flight time", {
   litchi.plan(exampleBoundary, outPath, params,
               max.flight.time = 10)
   title("Break into multiple flights")
-
   expect_equal(length(Sys.glob(paste0(tools::file_path_sans_ext(outPath), "*.csv"))), 3)
 })

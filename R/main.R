@@ -57,7 +57,10 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #' @export
 #' @import sp rgeos rgdal
 #' @importFrom graphics text
+#' @importFrom shotGroups getMinBBox
+#' @importFrom methods slot
 #' @importFrom utils data read.csv write.csv
+#'
 litchi.plan = function(roi, output,
                        flight.params, gimbal.pitch.angle = -90,
                        flight.lines.angle = -1, max.waypoints.distance = 2000,
@@ -84,10 +87,11 @@ litchi.plan = function(roi, output,
     minBbox = getBBoxAngle(vertices, flight.lines.angle)
   } else {
     # if angle not specified use minimum possible bounding box
-    minBbox = getMinBBox(vertices)
+    minBbox = shotGroups::getMinBBox(vertices)
+#    minBbox = getMinBBox(vertices)
   }
-  width = minBbox$width
-  height = minBbox$height
+  width = minBbox$heigh
+  height = minBbox$width
   alpha = minBbox$angle
   rads = alpha*pi/180
   centroid = apply(minBbox$pts, 2, mean)
