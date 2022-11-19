@@ -73,6 +73,10 @@ litchi.plan = function(roi,
                        starting.point = 1,
                        grid = FALSE) {
   # Check parameters
+  if (class(roi)[1] == "sf") {
+    roi <- sf::as_Spatial(roi)
+  }
+
   if (class(roi)[1] != "SpatialPolygonsDataFrame")
     stop("ROI is not a valid polygon layer")
   if (length(grep("units=m", as.character(roi@proj4string@projargs))) == 0)
@@ -459,7 +463,3 @@ flight.parameters = function(
 #   side.overlap = 0.8, #mudar para overlapFront
 #   front.overlap = 0.8 #mudar para overpSide
 # ))
-
-
-#TODO
-#Make DOUBLE GRID (perpendicular)
