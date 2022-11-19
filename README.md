@@ -22,9 +22,9 @@ devtools::install_github("caiohamamura/flightplanning-R")
 ## This fork
 
 * adopts the package to R >= 4.2.0 (backward compatible) - DONE
-* try to replace {rgdal}, {rgeos} and {sp} with {sf} - WIP
 * added `grid = FALSE | TRUE` parameter, which sets the flying direction over polygon - DONE
-* added input for `sf` polygons -- `roi` can be read with `sf::st_read()`
+* added input for `sf` polygons -- `roi` can be read with `sf::st_read()` - DONE
+* try to replace {rgdal}, {rgeos} and {sp} with {sf} - WIP
 
 ## Usage
 There are two main functions available:
