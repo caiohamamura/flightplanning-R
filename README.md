@@ -23,7 +23,8 @@ devtools::install_github("caiohamamura/flightplanning-R")
 
 * adopts the package to R >= 4.2.0 (backward compatible) - DONE
 * try to replace {rgdal}, {rgeos} and {sp} with {sf} - WIP
-* added `parallel = TRUE | FALSE` parameter, which sets the flying direction over polygon - DONE
+* added `grid = FALSE | TRUE` parameter, which sets the flying direction over polygon - DONE
+* added input for `sf` polygons -- `roi` can be read with `sf::st_read()`
 
 ## Usage
 There are two main functions available:
@@ -52,6 +53,7 @@ default 2000 (some issues have been reported with distances > 2 Km)
  - `max.flight.time`: maximum flight time. If mission is greater than the estimated time, 
  it will be splitted into smaller missions.
  - `starting.point`: numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
+ - `grid`: boolean (FALSE | TRUE). Change the fly direction over polygon from parallel to perpendicular
  
 ## Authors
  - Caio Hamamura
