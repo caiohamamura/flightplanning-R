@@ -20,7 +20,7 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #' @param max.flight.time maximum flight time. If mission is greater than the estimated
 #' time, it will be splitted into smaller missions.
 #' @param starting.point numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
-#' @param parallel logical (default TRUE). Change direction of the fly lines over polygon from parallel to perpendicular
+#' @param grid logical (default FALSE). Change direction of the fly lines over polygon from parallel to perpendicular
 #'
 #' @note this function will feed the csv flight plan with the `gimbal.pitch.angle`
 #' and the `photo time interval` for each waypoint, but those are not supported
@@ -56,10 +56,11 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #'
 #'
 #' @export
-#' @import sp rgeos rgdal
+#' @import rgeos rgdal
 #' @importFrom graphics text
 #' @importFrom shotGroups getMinBBox
 #' @importFrom methods slot
+#' @importFrom sp Line Lines SpatialLines
 #' @importFrom utils data read.csv write.csv
 #'
 litchi.plan = function(roi,
@@ -70,7 +71,7 @@ litchi.plan = function(roi,
                        max.waypoints.distance = 2000,
                        max.flight.time = 15,
                        starting.point = 1,
-                       parallel = TRUE) {
+                       grid = FALSE) {
   # Check parameters
   if (class(roi)[1] != "SpatialPolygonsDataFrame")
     stop("ROI is not a valid polygon layer")
@@ -79,8 +80,8 @@ litchi.plan = function(roi,
   if (methods::is(flight.params)[1] != "Flight Parameters")
     stop("Flight parameters is not an instance returned from flight.parameters()")
   # TODO add a test
-  if (!is.logical(parallel)) {
-    stop("parallel has to be TRUE or FALSE")
+  if (!is.logical(grid)) {
+    stop("grid has to be TRUE or FALSE")
   }
 
   # Parameters calculated
@@ -101,7 +102,7 @@ litchi.plan = function(roi,
 #    minBbox = getMinBBox(vertices)
   }
 
-  if (parallel == TRUE) {
+  if (grid == FALSE) {
     width = minBbox$height
     height = minBbox$width
     alpha = minBbox$angle
@@ -179,8 +180,8 @@ litchi.plan = function(roi,
 
 # RSB
   glist <- vector(mode="list", length=nrow(waypoints)-1)
-  for (i in seq_along(glist)) glist[[i]] <- Lines(list(Line(waypoints[c(i, (i+1)),])), ID=as.character(i))
-  gLines <- SpatialLines(glist, proj4string=slot(roi, "proj4string"))
+  for (i in seq_along(glist)) glist[[i]] <- sp::Lines(list(sp::Line(waypoints[c(i, (i+1)),])), ID=as.character(i))
+  gLines <- sp::SpatialLines(glist, proj4string=slot(roi, "proj4string"))
   inter = rgeos::gIntersection(rgeos::gBuffer(roi, width = flightLineDistance), gLines, byid=TRUE)
   nLines <- length(inter)
   flightLines <- t(sapply(slot(inter, "lines"), function(x) slot(slot(x,  "Lines")[[1]], "coords")))
