@@ -355,6 +355,9 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
   message(round(alpha, 4))
   message('Total flight time: ', appendLF = FALSE)
   message(round(totalFlightTime, 4))
+  message('Distance between flyin lines: ', appendLF = FALSE)
+  message(round(flightLineDistance, 3))
+  message('', appendLF = TRUE)
 
   return (waypoints)
 }
