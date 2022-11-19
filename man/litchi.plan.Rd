@@ -12,7 +12,8 @@ litchi.plan(
   flight.lines.angle = -1,
   max.waypoints.distance = 2000,
   max.flight.time = 15,
-  starting.point = 1
+  starting.point = 1,
+  parallel = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ default 2000 (some issues have been reported with distances > 2 Km)}
 time, it will be splitted into smaller missions.}
 
 \item{starting.point}{numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1}
+
+\item{parallel}{logical (default TRUE). Change direction of the fly lines over polygon from parallel to perpendicular}
 }
 \value{
 A data frame with the waypoints calculated for the flight plan

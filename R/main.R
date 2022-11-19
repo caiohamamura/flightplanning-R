@@ -20,6 +20,7 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #' @param max.flight.time maximum flight time. If mission is greater than the estimated
 #' time, it will be splitted into smaller missions.
 #' @param starting.point numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
+#' @param parallel logical (default TRUE). Change direction of the fly lines over polygon from parallel to perpendicular
 #'
 #' @note this function will feed the csv flight plan with the `gimbal.pitch.angle`
 #' and the `photo time interval` for each waypoint, but those are not supported
@@ -61,10 +62,15 @@ DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
 #' @importFrom methods slot
 #' @importFrom utils data read.csv write.csv
 #'
-litchi.plan = function(roi, output,
-                       flight.params, gimbal.pitch.angle = -90,
-                       flight.lines.angle = -1, max.waypoints.distance = 2000,
-                       max.flight.time = 15, starting.point = 1) {
+litchi.plan = function(roi,
+                       output,
+                       flight.params,
+                       gimbal.pitch.angle = -90,
+                       flight.lines.angle = -1,
+                       max.waypoints.distance = 2000,
+                       max.flight.time = 15,
+                       starting.point = 1,
+                       parallel = TRUE) {
   # Check parameters
   if (class(roi)[1] != "SpatialPolygonsDataFrame")
     stop("ROI is not a valid polygon layer")
@@ -72,6 +78,10 @@ litchi.plan = function(roi, output,
     stop("ROI is not in a metric projection")
   if (methods::is(flight.params)[1] != "Flight Parameters")
     stop("Flight parameters is not an instance returned from flight.parameters()")
+  # TODO add a test
+  if (!is.logical(parallel)) {
+    stop("parallel has to be TRUE or FALSE")
+  }
 
   # Parameters calculated
   flight.speed.kmh = flight.params@flight.speed.kmh
@@ -90,9 +100,17 @@ litchi.plan = function(roi, output,
     minBbox = shotGroups::getMinBBox(vertices)
 #    minBbox = getMinBBox(vertices)
   }
-  width = minBbox$heigh
-  height = minBbox$width
-  alpha = minBbox$angle
+
+  if (parallel == TRUE) {
+    width = minBbox$height
+    height = minBbox$width
+    alpha = minBbox$angle
+  } else {
+    width = minBbox$width
+    height = minBbox$height
+    alpha = minBbox$angle-90
+  }
+
   rads = alpha*pi/180
   centroid = apply(minBbox$pts, 2, mean)
 

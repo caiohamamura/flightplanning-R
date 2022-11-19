@@ -1,4 +1,4 @@
-flightplanning-R
+# flightplanning-R
 ================================
 [![CRAN](https://www.r-pkg.org/badges/version/flightplanning)](https://cran.r-project.org/web/packages/flightplanning)
 [![Build Status](https://travis-ci.com/caiohamamura/flightplanning-R.svg)](https://travis-ci.com/caiohamamura/flightplanning-R)
@@ -23,6 +23,7 @@ devtools::install_github("caiohamamura/flightplanning-R")
 
 * adopts the package to R >= 4.2.0 (backward compatible) - DONE
 * try to replace {rgdal}, {rgeos} and {sp} with {sf} - WIP
+* added `parallel = TRUE | FALSE` parameter, which sets the flying direction over polygon - DONE
 
 ## Usage
 There are two main functions available:
