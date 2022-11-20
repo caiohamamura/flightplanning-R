@@ -24,7 +24,97 @@ devtools::install_github("caiohamamura/flightplanning-R")
 * adopts the package to R >= 4.2.0 (backward compatible) - DONE
 * added `grid = FALSE | TRUE` parameter, which sets the flying direction over polygon - DONE
 * added input for `sf` polygons -- `roi` can be read with `sf::st_read()` - DONE
-* try to replace {rgdal}, {rgeos} and {sp} with {sf} - WIP
+* try to replace {rgdal}, {rgeos} and {sp} with {sf} - DONE?
+
+## New function for testing
+ * `litchi_sf()`
+
+### Example usage
+
+``` r
+library(flightplanning)
+f <- "mytest/lasek.gpkg"
+roi <- sf::st_read(f)
+
+output <- "mytest/fly.csv"
+
+params <- flight.parameters(
+  height = 120,
+  focal.length35 = 24,
+  flight.speed.kmh = 24,
+  side.overlap = 0.8,
+  front.overlap = 0.8
+)
+
+litchi_sf(roi,
+  output,
+  params,
+  gimbal.pitch.angle = -90,
+  flight.lines.angle = -1,
+  max.waypoints.distance = 400,
+  max.flight.time = 18,
+  grid = FALSE
+)
+#> #####################
+#> ## Flight settings ##
+#> #####################
+#> Min shutter speed: 1/128
+#> Photo interval:    4 s
+#> Flight speed:      23.364 km/h
+#> Flight lines angle: 104.3223
+#> Total flight time: 16.2097
+```
+
+![](https://i.imgur.com/mG1npRr.png)
+
+Per default `litchi_sf()` takes first polygon from the input layer. If there is a need to run a mission over several polygons, you can union them like:
+
+```r
+if(nrow(roi) > 1) {
+  roi <- sf::st_union(roi)
+}
+
+litchi_sf(roi,
+          output,
+          params,
+          gimbal.pitch.angle = -90,
+          flight.lines.angle = -1,
+          max.waypoints.distance = 400,
+          max.flight.time = 18,
+          grid = FALSE
+)
+#> Your flight was splitted in 2 splits,
+#> because the total time would be 26.91 minutes.
+#> They were saved as:
+#> mytest/fly1.csv
+#> mytest/fly2.csv
+#> The entire flight plan was saved as:
+#> mytest/fly_entire.csv
+#> #####################
+#> ## Flight settings ## 
+#> #####################
+#> Min shutter speed: 1/128
+#> Photo interval:    4 s
+#> Flight speed:      23.364 km/h
+#> Flight lines angle: 104.2442
+#> Total flight time: 26.9055
+```
+![](https://i.imgur.com/Vfr1Bj9.png)
+
+Using `grid = TRUE` parameter you can change the direction of the grid like:
+
+```r
+litchi_sf(roi,
+          output,
+          params,
+          gimbal.pitch.angle = -90,
+          flight.lines.angle = -1,
+          max.waypoints.distance = 400,
+          max.flight.time = 18,
+          grid = TRUE
+)
+```
+![](https://i.imgur.com/MRFkkrO.png)
 
 ## Usage
 There are two main functions available:

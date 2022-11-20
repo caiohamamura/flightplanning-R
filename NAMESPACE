@@ -2,8 +2,10 @@
 
 export(flight.parameters)
 export(litchi.plan)
+export(litchi_sf)
 import(rgdal)
 import(rgeos)
+import(sf)
 importFrom(grDevices,chull)
 importFrom(graphics,text)
 importFrom(methods,slot)
