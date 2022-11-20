@@ -76,7 +76,7 @@ litchi_sf = function(roi,
       sf::st_as_sf()
   }
 
-  if(sf::st_geometry_type(roi)[[1]] %in% c("POLYGON", "MULTIPOLYGON")) {
+  if(!sf::st_geometry_type(roi)[[1]] %in% c("POLYGON", "MULTIPOLYGON")) {
     stop("ROI is neither POLYGON nor MULTIPOLYGON")
   }
   if (!grepl("LENGTHUNIT[\"metre\",1]", sf::st_crs(roi)[2], fixed = TRUE))

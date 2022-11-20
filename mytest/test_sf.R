@@ -15,7 +15,7 @@ if(nrow(roi) > 1) {
     sf::st_as_sf()
 }
 
-
+roi
 params = flightplanning::flight.parameters(height=Wysokosc,
                                            flight.speed.kmh=24,
                                            side.overlap = 0.8,
@@ -112,18 +112,22 @@ litchi_sf = function(roi,
                        starting.point = 1,
                        grid = FALSE) {
 
-  # Check parameters
-  roiCRS <- sf::st_crs(roi)
+  if (class(roi)[1] != "sf") {
+    roi <- sf::st_as_sf(roi)
+  }
 
-  # if (class(roi)[1] == "sf") {
-  #   roi <- sf::as_Spatial(roi)
-  # }
-  # if (class(roi)[1] != "SpatialPolygonsDataFrame")
-  #   stop("ROI is not a valid polygon layer")
-  # if (length(grep("units=m", as.character(roi@proj4string@projargs))) == 0)
-  #   stop("ROI is not in a metric projection")
-  # if (methods::is(flight.params)[1] != "Flight Parameters")
-  #   stop("Flight parameters is not an instance returned from flight.parameters()")
+  if(nrow(roi) > 1) {
+    roi <- roi[1,] |>
+      sf::st_as_sf()
+  }
+
+  if(!sf::st_geometry_type(roi)[[1]] %in% c("POLYGON", "MULTIPOLYGON")) {
+    stop("ROI is neither POLYGON nor MULTIPOLYGON")
+  }
+  if (!grepl("LENGTHUNIT[\"metre\",1]", sf::st_crs(roi)[2], fixed = TRUE))
+    stop("ROI is not in a metric projection")
+  if (methods::is(flight.params)[1] != "Flight Parameters")
+    stop("Flight parameters is not an instance returned from flight.parameters()")
   if (!is.logical(grid)) {
     stop("grid has to be TRUE or FALSE")
   }
@@ -136,6 +140,7 @@ litchi_sf = function(roi,
   groundHeightOverlap = groundHeight * flight.params@front.overlap
   flightLineDistance = flight.params@flight.line.distance
   vertices <- sf::st_coordinates(roi)[,1:2]
+  roiCRS <- sf::st_crs(roi)
 
   # Get bounding box parameters
   if (flight.lines.angle != -1) {

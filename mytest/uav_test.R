@@ -1,6 +1,7 @@
 library(flightplanning)
-f <- "mytest/lasek.gpkg"
-roi <- sf::st_read(f)
+f <- "mytest/uav_bug.gpkg"
+roi <- sf::st_read(f, layer = "Zalew")
+str(roi)
 if(nrow(roi) > 1) {
   roi <- sf::st_union(roi)
 }
