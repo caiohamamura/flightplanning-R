@@ -76,8 +76,9 @@ litchi_sf = function(roi,
       sf::st_as_sf()
   }
 
-  roiCRS <- sf::st_crs(roi)
-
+  if(sf::st_geometry_type(roi)[[1]] %in% c("POLYGON", "MULTIPOLYGON")) {
+    stop("ROI is neither POLYGON nor MULTIPOLYGON")
+  }
   if (!grepl("LENGTHUNIT[\"metre\",1]", sf::st_crs(roi)[2], fixed = TRUE))
     stop("ROI is not in a metric projection")
   if (methods::is(flight.params)[1] != "Flight Parameters")
@@ -94,6 +95,7 @@ litchi_sf = function(roi,
   groundHeightOverlap = groundHeight * flight.params@front.overlap
   flightLineDistance = flight.params@flight.line.distance
   vertices <- sf::st_coordinates(roi)[,1:2]
+  roiCRS <- sf::st_crs(roi)
 
   # Get bounding box parameters
   if (flight.lines.angle != -1) {
