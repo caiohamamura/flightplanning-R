@@ -1,10 +1,6 @@
 # flightplanning-R
 ================================
-[![CRAN](https://www.r-pkg.org/badges/version/flightplanning)](https://cran.r-project.org/web/packages/flightplanning)
-[![Build Status](https://travis-ci.com/caiohamamura/flightplanning-R.svg)](https://travis-ci.com/caiohamamura/flightplanning-R)
-[![codecov](https://codecov.io/gh/caiohamamura/flightplanning-R/branch/master/graph/badge.svg)](https://codecov.io/gh/caiohamamura/flightplanning-R)
 ![license](https://img.shields.io/badge/license-MIT-green.svg) 
-![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/flightplanning)
 
 An R package for generating UAV flight plans, specially for Litchi.
 
@@ -12,11 +8,11 @@ An R package for generating UAV flight plans, specially for Litchi.
 
 ## Installation
 
-This package should be installed using the devtools.
+This version of package should be installed using the devtools.
 
 ```r
 # install.packages("devtools")
-devtools::install_github("caiohamamura/flightplanning-R")
+devtools::install_github("gsapijaszko/flightplanning-R")
 ```
 
 ## This fork

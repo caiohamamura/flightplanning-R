@@ -23,7 +23,7 @@ params = flightplanning::flight.parameters(height=Wysokosc,
 
 flight.params <- params
 gimbal.pitch.angle = -90
-flight.lines.angle = -1
+flight.lines.angle = -15
 max.waypoints.distance = 2000
 max.flight.time = 15
 starting.point = 1
@@ -37,7 +37,7 @@ flightplanning::litchi_sf(roi,
   max.waypoints.distance = 2000,
   max.flight.time = 15,
   starting.point = 1,
-  grid = FALSE
+  grid = TRUE
 )
 
 
