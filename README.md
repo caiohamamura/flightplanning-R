@@ -21,6 +21,7 @@ devtools::install_github("gsapijaszko/flightplanning-R")
 * added `grid = FALSE | TRUE` parameter, which sets the flying direction over polygon - DONE
 * added input for `sf` polygons -- `roi` can be read with `sf::st_read()` - DONE
 * try to replace {rgdal}, {rgeos} and {sp} with {sf} - DONE?
+* if you prefer to run in in QGIS, please check the [QGIS processing script](https://github.com/gsapijaszko/qgis_r_processing/blob/main/uav_planner_litchi.rsx) available on [qgis r processing repo](https://github.com/gsapijaszko/qgis_r_processing).
 
 ## New function for testing
  * `litchi_sf()`
