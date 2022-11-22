@@ -1,5 +1,5 @@
 # flightplanning-R
-================================
+
 ![license](https://img.shields.io/badge/license-MIT-green.svg) 
 
 An R package for generating UAV flight plans, specially for Litchi.
