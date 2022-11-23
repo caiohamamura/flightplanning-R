@@ -57,14 +57,14 @@
 #'
 #' @export
 litchi_sf = function(roi,
-                       output,
-                       flight.params,
-                       gimbal.pitch.angle = -90,
-                       flight.lines.angle = -1,
-                       max.waypoints.distance = 2000,
-                       max.flight.time = 15,
-                       starting.point = 1,
-                       grid = FALSE) {
+                     output,
+                     flight.params,
+                     gimbal.pitch.angle = -90,
+                     flight.lines.angle = -1,
+                     max.waypoints.distance = 2000,
+                     max.flight.time = 15,
+                     starting.point = 1,
+                     grid = FALSE) {
 
   # Check parameters
   if (class(roi)[1] != "sf") {
@@ -195,7 +195,7 @@ litchi_sf = function(roi,
   inter <-suppressWarnings(sf::st_intersection(
     sf::st_buffer(sf::st_as_sf(roi), flightLineDistance),
     lines) |>
-    sf::st_cast(to = "LINESTRING"))
+      sf::st_cast(to = "LINESTRING"))
 
   # ---------------------------------------------------------------------------------------------
   # nLines <- length(inter)
@@ -208,18 +208,22 @@ litchi_sf = function(roi,
   curvedPoints = outerCurvePoints(waypoints = waypoints,
                                                    angle = alpha,
                                                    flightLineDistance = flightLineDistance)
+  row.names(curvedPoints) <- curvedPoints$index
 
   # Adjust curve points position to avoid acute angles
   adjustedCurves = adjustAcuteAngles(xy = curvedPoints,
                                                       angle = alpha,
                                                       minAngle = 80)
-
+  row.names(adjustedCurves) <- adjustedCurves$index
+  # dotąd się zgadza
   # Concatenate regular waypoints with curve waypoints
   wptsMatrix = as.data.frame(matrix(nrow=nrow(waypoints)+nrow(adjustedCurves),ncol=4))
   colnames(wptsMatrix) = colnames=c("x", "y", "isCurve", "takePhoto")
   mat_pos = 1
   for (i in seq_len(nrow(waypoints))) {
-    curve = as.vector(adjustedCurves[i, ])
+    #    i <- 6
+    #    mat_pos <- 11
+    curve = as.vector(adjustedCurves[as.character(i), ])
     hasCurve = !anyNA(curve)
     if (hasCurve) {
       if (curve$before) {
@@ -259,7 +263,7 @@ litchi_sf = function(roi,
     waypoints2[-idx,] = waypoints
     waypoints = waypoints2
   }
-waypoints
+  waypoints
 
   # ---------------------------------------------------------------------------------------------
   t <- waypoints |>
