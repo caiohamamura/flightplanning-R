@@ -13,6 +13,7 @@ litchi_sf(
   max.waypoints.distance = 2000,
   max.flight.time = 15,
   starting.point = 1,
+  launch = list(0, 0),
   grid = FALSE
 )
 }
@@ -35,6 +36,8 @@ default 2000 (some issues have been reported with distances > 2 Km)}
 time, it will be splitted into smaller missions.}
 
 \item{starting.point}{numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1}
+
+\item{launch}{list(0,0) launch point coordinates (x, y), has to be provided in the same metric CRS as roi}
 
 \item{grid}{logical (default FALSE). Change direction of the fly lines over polygon from parallel to perpendicular}
 }

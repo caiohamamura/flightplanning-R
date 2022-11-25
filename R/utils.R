@@ -217,6 +217,32 @@ getAngles = function(waypoints) {
   angles
 }
 
+
+# ---------------------------------------------------------------------------------------------
+# from https://github.com/caiohamamura/flightplanning-R/pull/4/commits/1b43add396c8ed9020c1f06863d4e7c8aef7355d
+# Calculate distance in meters between two points
+#' @param long1 longitude of the first point
+#' @param lat1 latitude of the 1st point
+#' @param long2 longitude of the 2nd point
+#' @param lat2 latitude of the 2nd point
+earth.dist <- function (long1, lat1, long2, lat2)
+{
+  rad <- pi/180
+  a1 <- lat1 * rad
+  a2 <- long1 * rad
+  b1 <- lat2 * rad
+  b2 <- long2 * rad
+  dlon <- b2 - a2
+  dlat <- b1 - a1
+  a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+  c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+  R <- 6378.145
+  d <- R * c
+  return(d * 1000)
+}
+
+# ---------------------------------------------------------------------------------------------
+
 #' Class for Flight Parameters
 setClass("Flight Parameters",
          slots = c(
@@ -240,3 +266,4 @@ setClass("Flight Parameters",
            photo.interval        = NA_real_
          )
 )
+

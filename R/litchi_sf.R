@@ -1,3 +1,6 @@
+MAX_WAYPOINTS = 99
+
+
 #'  Function to generate Litchi csv flight plan
 #'
 #' @rdname litchi_sf
@@ -15,6 +18,7 @@
 #' @param max.flight.time maximum flight time. If mission is greater than the estimated
 #' time, it will be splitted into smaller missions.
 #' @param starting.point numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
+#' @param launch list(0,0) launch point coordinates (x, y), has to be provided in the same metric CRS as roi
 #' @param grid logical (default FALSE). Change direction of the fly lines over polygon from parallel to perpendicular
 #'
 #' @note this function will feed the csv flight plan with the `gimbal.pitch.angle`
@@ -52,19 +56,19 @@
 #' @importFrom graphics text
 #' @importFrom shotGroups getMinBBox
 #' @importFrom methods slot
-#' @importFrom sp Line Lines SpatialLines
 #' @importFrom utils data read.csv write.csv
 #'
 #' @export
 litchi_sf = function(roi,
-                       output,
-                       flight.params,
-                       gimbal.pitch.angle = -90,
-                       flight.lines.angle = -1,
-                       max.waypoints.distance = 2000,
-                       max.flight.time = 15,
-                       starting.point = 1,
-                       grid = FALSE) {
+                     output,
+                     flight.params,
+                     gimbal.pitch.angle = -90,
+                     flight.lines.angle = -1,
+                     max.waypoints.distance = 2000,
+                     max.flight.time = 15,
+                     starting.point = 1,
+                     launch = list(0, 0),
+                     grid = FALSE) {
 
   # Check parameters
   if (class(roi)[1] != "sf") {
@@ -122,6 +126,8 @@ litchi_sf = function(roi,
   # based on angle and width/height offsets
   # width offsets (between flightlines)
   nLines = ceiling(width / flightLineDistance) + 1
+  # Then need to update flightLineDistance to avoid offset/quantization errors
+  flightLineDistance = width / (nLines - 1)
   xWidths = (-nLines/2):(nLines/2) * flightLineDistance
   xWidths = rep(xWidths, each=2)
 
@@ -137,6 +143,12 @@ litchi_sf = function(roi,
 
 
   # Switch position of the first point
+  if (starting.point == 0) {
+    # In this case we will automatically pick the best starting point
+    # TODO check if launch is valid and not (0,0)
+    # TODO figure out closest corner in shape to launch point and then set starting.point to 1-4
+    starting.point == 1
+  }
   if (starting.point == 2) {
     yHeights = c(heightPHalf, heightMHalf)
   } else if (starting.point == 3) {
@@ -163,14 +175,6 @@ litchi_sf = function(roi,
   # Initial waypoints to intersect waypoints
   waypoints = xys + rep(centroid, each=nrow(xys))
 
-  #################################################
-  # Intersect each flight line from bounding box
-  # to match actual ROI
-  #################################################
-  # For some reason gIntersection with MULTILINESTRING
-  # will return linestrings in inconsistent order
-  # though it will be done in a for loop
-
   # ---------------------------------------------------------------------------------------------
   lines <- do.call(
     sf::st_sfc,
@@ -195,31 +199,33 @@ litchi_sf = function(roi,
   inter <-suppressWarnings(sf::st_intersection(
     sf::st_buffer(sf::st_as_sf(roi), flightLineDistance),
     lines) |>
-    sf::st_cast(to = "LINESTRING"))
+      sf::st_cast(to = "LINESTRING"))
 
   # ---------------------------------------------------------------------------------------------
-  # nLines <- length(inter)
-  # gflightLines <-
   waypoints <- sf::st_coordinates(inter)[,1:2]
 
   # ---------------------------------------------------------------------------------------------
 
   # Calculate curves points to allow smooth curves
   curvedPoints = outerCurvePoints(waypoints = waypoints,
-                                                   angle = alpha,
-                                                   flightLineDistance = flightLineDistance)
+                                  angle = alpha,
+                                  flightLineDistance = flightLineDistance)
+  row.names(curvedPoints) <- curvedPoints$index
 
   # Adjust curve points position to avoid acute angles
   adjustedCurves = adjustAcuteAngles(xy = curvedPoints,
-                                                      angle = alpha,
-                                                      minAngle = 80)
+                                     angle = alpha,
+                                     minAngle = 80)
+  row.names(adjustedCurves) <- adjustedCurves$index
 
   # Concatenate regular waypoints with curve waypoints
   wptsMatrix = as.data.frame(matrix(nrow=nrow(waypoints)+nrow(adjustedCurves),ncol=4))
   colnames(wptsMatrix) = colnames=c("x", "y", "isCurve", "takePhoto")
   mat_pos = 1
   for (i in seq_len(nrow(waypoints))) {
-    curve = as.vector(adjustedCurves[i, ])
+    #    i <- 6
+    #    mat_pos <- 11
+    curve = as.vector(adjustedCurves[as.character(i), ])
     hasCurve = !anyNA(curve)
     if (hasCurve) {
       if (curve$before) {
@@ -240,26 +246,47 @@ litchi_sf = function(roi,
   }
   waypoints = wptsMatrix
 
+  # from https://github.com/caiohamamura/flightplanning-R/pull/4/commits/c36501d8ea0cab6cdcb3e5123452bb4c18599aac
+  #
   # Break if distance greater than the maxWaypointDistance
-  waypointsXY = waypoints[, c("x", "y")]
-  distances = sqrt(diff(waypoints$x)**2 + diff(waypoints$y)**2)
-  breakIdx = distances > max.waypoints.distance
+  # A single pass only adds one intermediate waypoint even if a leg is longer than max,
+  # but more than one intermediate point may be needed.
+  # We can iterate this process as a temp fix but we may be adding more intermediate
+  # waypoints than strictly necessary--e.g. when 2 intermediate points will suffice we will get 3.
+  retest = TRUE
+  while (retest) {
+    waypointsXY = waypoints[, c("x", "y")]
+    distances = sqrt(diff(waypoints$x)**2 + diff(waypoints$y)**2)
+    breakIdx = distances > max.waypoints.distance
 
-  newSize = nrow(waypoints) + sum(breakIdx)
-  if (newSize != nrow(waypoints)) {
-    midpoints = (waypointsXY[breakIdx,] + waypointsXY[-1,][breakIdx,])/2
-    waypoints2 = data.frame(x = numeric(newSize),
-                            y = numeric(newSize),
-                            isCurve = FALSE,
-                            takePhoto = TRUE)
+    newSize = nrow(waypoints) + sum(breakIdx)
+    if (newSize != nrow(waypoints)) {
+      midpoints = (waypointsXY[breakIdx,] + waypointsXY[-1,][breakIdx,])/2
+      waypoints2 = data.frame(x = numeric(newSize),
+                              y = numeric(newSize),
+                              isCurve = FALSE,
+                              takePhoto = TRUE)
 
-    pos = seq_along(breakIdx)[breakIdx]
-    idx = pos + order(pos)
-    waypoints2[idx,1:2] = midpoints
-    waypoints2[-idx,] = waypoints
-    waypoints = waypoints2
+      pos = seq_along(breakIdx)[breakIdx]
+      idx = pos + order(pos)
+      waypoints2[idx,1:2] = midpoints
+      waypoints2[-idx,] = waypoints
+      waypoints = waypoints2
+    }
+    else {
+      retest = FALSE
+    }
   }
-waypoints
+  # from: https://github.com/caiohamamura/flightplanning-R/pull/4/commits/fed8f6928aef89eb5d7884b6001b7e16f0ec4bfd
+  #
+  # Check if launch point has been specified before inserting it as way-point 1
+  hasCustomLaunch = (launch[1] != 0) || (launch[2] != 0)
+  if (hasCustomLaunch) {
+    message("Launch point specified: ", launch[1], ',', launch[2])
+    MAX_WAYPOINTS = MAX_WAYPOINTS - 1
+  } else {
+    message("No launch point specified")
+  }
 
   # ---------------------------------------------------------------------------------------------
   t <- waypoints |>
@@ -267,6 +294,7 @@ waypoints
     sf::st_transform(crs = "EPSG:4326")
   lngs <- as.numeric(sf::st_coordinates(t)[,1])
   lats <- as.numeric(sf::st_coordinates(t)[,2])
+  photos = t$takePhoto
   # ---------------------------------------------------------------------------------------------
 
   graphics::plot(waypoints[,1:2])
@@ -286,13 +314,16 @@ waypoints
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
   dfLitchi$altitude.m. = flight.params@height
+  dfLitchi$altitudemode = 1
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_distinterval = flight.params@ground.height
+  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
+  dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
-
+  dfLitchi$actiontype1 = 5
+  dfLitchi$actionparam1 = gimbal.pitch.angle
 
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
@@ -301,22 +332,131 @@ waypoints
   finalSize = nrow(dfLitchi)
   totalFlightTime = flightTime[finalSize]
   dfLitchi$split = 1
-  if (totalFlightTime > max.flight.time) {
+  if ((totalFlightTime > max.flight.time) || (nrow(waypoints) > MAX_WAYPOINTS)) {
     indexes = seq_len(finalSize)
-    nBreaks = ceiling(totalFlightTime/max.flight.time)
+    nBreaks = max(ceiling(totalFlightTime/max.flight.time), ceiling(nrow(waypoints)/MAX_WAYPOINTS))
     breaks = seq(0, flightTime[finalSize], length.out = nBreaks+1)[c(-1, -nBreaks-1)]
     endWaypointsIndex = indexes[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
     endWaypoints = flightTime[waypoints$isCurve & (seq_len(finalSize) %% 2 == 0)]
     selected = sapply(breaks, function(x) which.min(abs(endWaypoints-x)))
     waypointsBreak = endWaypointsIndex[indexes[selected]]
 
-
     dfLitchi$split = rep(1:nBreaks, diff(c(0, waypointsBreak, finalSize)))
     splits = split.data.frame(dfLitchi, f = dfLitchi$split)
-    message("Your flight was splitted in ", length(splits), " splits,
-because the total time would be ", round(totalFlightTime, 2), " minutes.")
-    message("They were saved as:")
-    first = substr(output, 1, nchar(output)-4)
+
+
+# ---------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
+    if (hasCustomLaunch) {
+      p0x = launch[[1]][1]
+      p0y = launch[[2]][1]
+
+      message("adding custom launch point to submissions")
+
+      launch84 <- sf::st_point(x = c(launch[[1]], launch[[2]])) |>
+        sf::st_sfc(crs = roiCRS) |>
+        sf::st_transform(crs = "EPSG:4326") |>
+        sf::st_coordinates()
+
+      overage = NULL
+
+      for (i in 1:length(splits)) {
+        message("starting ", i)
+        if (!is.null(overage)) {
+          message("setting ", i, " to ", "overage (", nrow(overage), ") and ", nrow(splits[[i]]))
+          splits[[i]] = rbind(overage, splits[[i]])
+        }
+
+        mercator = splits[[i]] |>
+          sf::st_as_sf(coords = c("longitude", "latitude"), crs = "EPSG:4326") |>
+          sf::st_transform(crs = roiCRS) |>
+          subset(select = "geometry") |>
+          sf::st_coordinates()
+
+        p1x = as.numeric(mercator[1, 1])
+        p1y = as.numeric(mercator[1, 2])
+
+        dx = p1x - p0x
+        dy = p1y - p0y
+        distance = earth.dist(launch84[[1]][1], launch84[[2]][1], splits[[i]]$longitude[1], splits[[i]]$latitude[1])
+
+        interpPtsToAdd = floor(distance / max.waypoints.distance)
+        nPtsToAdd = 1 + interpPtsToAdd
+
+        message("adding ", nPtsToAdd, " points")
+
+        ptsToAdd = rbind(splits[[1]][1:nPtsToAdd,])
+        ptsToAdd$split <- i
+        ptsToAdd$curvesize.m. <- 0
+        ptsToAdd$photo_distinterval <- 0
+        ptsToAdd$photo_timeinterval <- 0
+
+        toConvert = data.frame(
+          lon = numeric(nPtsToAdd),
+          lat = numeric(nPtsToAdd)
+        )
+
+        toConvert[1,] = c(p0x, p0y)
+        if (nPtsToAdd > 1) {
+          for (j in 2:nPtsToAdd) {
+            toConvert[j,] <- c(p0x + ((j - 1) / nPtsToAdd) * dx, p0y + ((j - 1) / nPtsToAdd) * dy)
+          }
+        }
+
+        wgs84D = toConvert |>
+          sf::st_as_sf(coords = c("lon", "lat"), crs = roiCRS) |>
+          sf::st_transform(crs = "EPSG:4326") |>
+          subset(select = "geometry") |>
+          sf::st_coordinates()
+
+        ptsToAdd$latitude = wgs84D[ ,2]
+        ptsToAdd$longitude = wgs84D[ ,1]
+
+        splitSize = nrow(splits[[i]])
+        totalSize = splitSize + nPtsToAdd
+        rem = 0
+        if (totalSize > MAX_WAYPOINTS + 1) {
+          rem = totalSize - (MAX_WAYPOINTS + 1)
+        }
+
+        if (rem > 0) {
+          message("setting overage to ", splitSize + 1 - rem, " : ", splitSize)
+          message(class(splits[[i]]))
+          message(splits[[i]][splitSize + 1 - rem:splitSize,])
+          message(colnames(splits[[i]]))
+          message(splits[[i]])
+          message(colnames(splits[[i]][splitSize + 1 - rem:splitSize,]))
+          message(rownames(splits[[i]][splitSize + 1 - rem:splitSize,]))
+          overage = rbind(splits[[i]][splitSize + 1 - rem:splitSize,])
+          message("overage has ", nrow(overage))
+          message(overage)
+          message(overage[splitSize + 1 - rem: splitSize,])
+        } else {
+          message("setting overage to NULL")
+          overage = NULL
+        }
+
+        message("setting ", i, " to ptsToAdd (", nrow(ptsToAdd), ") + splits 1 : ", splitSize - rem)
+        splits[[i]] = rbind(ptsToAdd, splits[[i]][1:splitSize - rem,])
+      }
+
+      if (!is.null(overage)) {
+        newIdx = length(splits) + 1
+        splits[[newIdx]] = rbind(overage)
+        splits[[newIdx]]$split = newIdx
+      }
+    }
+# ---------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
+
+    if (nrow(waypoints) > MAX_WAYPOINTS) {
+      message("Your flight was split into ", length(splits), " sub-flights, because the number of waypoints ", nrow(waypoints), " exceeds the maximum of ", MAX_WAYPOINTS, ".")
+    }
+    else {
+      message("Your flight was split into ", length(splits), " sub-flights, because the total flight time of ", round(totalFlightTime, 2), " minutes exceeds the max of ", max.flight.time, " minutes.")
+    }
+    message("The flights were saved as:")
+    first = paste0(substr(output, 1, nchar(output)-4), "_")
     second = substr(output, nchar(output)-3, nchar(output))
     for (dataSplit in splits) {
       i = dataSplit[1, ]$split
@@ -324,7 +464,7 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
       write.csv(dataSplit[,-ncol(dataSplit)], output2, row.names = FALSE)
       message(output2)
     }
-    output2 = paste0(first, "_entire", second)
+    output2 = paste0(first, "entire", second)
     write.csv(dfLitchi, output2, row.names = FALSE)
     message("The entire flight plan was saved as:")
     message(output2)
@@ -348,9 +488,14 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
   message("Photo interval:    ", appendLF = FALSE)
   message(flight.params@photo.interval, appendLF = FALSE)
   message(" s")
+  message("Photo distance:    ", appendLF = FALSE)
+  message(flight.params@photo.interval * flight.params@flight.speed.kmh / 3.6, appendLF = FALSE)
+  message(" m")
   message("Flight speed:      ", appendLF = FALSE)
   message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
   message(" km/h")
+  message("Total number of waypoints", appendLF = FALSE)
+  message(nrow(waypoints))
   message("Flight lines angle: ", appendLF = FALSE)
   message(round(alpha, 4))
   message('Total flight time: ', appendLF = FALSE)

@@ -1,22 +1,18 @@
 # flightplanning-R
-================================
-[![CRAN](https://www.r-pkg.org/badges/version/flightplanning)](https://cran.r-project.org/web/packages/flightplanning)
-[![Build Status](https://travis-ci.com/caiohamamura/flightplanning-R.svg)](https://travis-ci.com/caiohamamura/flightplanning-R)
-[![codecov](https://codecov.io/gh/caiohamamura/flightplanning-R/branch/master/graph/badge.svg)](https://codecov.io/gh/caiohamamura/flightplanning-R)
-![license](https://img.shields.io/badge/license-MIT-green.svg) 
-![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/flightplanning)
 
-An R package for generating UAV flight plans, specially for Litchi.
+![license](https://img.shields.io/badge/license-MIT-green.svg) 
+
+An R package for generating UAV flight plans, especially for Litchi.
 
 <img src="man/images/MANEJO_4.0_alta_velocidade.gif" alt="Animation of drone taking photos along the flight plan" align="center"/>
 
 ## Installation
 
-This package should be installed using the devtools.
+This version of package should be installed using the devtools/remotes:
 
 ```r
 # install.packages("devtools")
-devtools::install_github("caiohamamura/flightplanning-R")
+devtools::install_github("gsapijaszko/flightplanning-R")
 ```
 
 ## This fork
@@ -24,7 +20,9 @@ devtools::install_github("caiohamamura/flightplanning-R")
 * adopts the package to R >= 4.2.0 (backward compatible) - DONE
 * added `grid = FALSE | TRUE` parameter, which sets the flying direction over polygon - DONE
 * added input for `sf` polygons -- `roi` can be read with `sf::st_read()` - DONE
-* try to replace {rgdal}, {rgeos} and {sp} with {sf} - DONE?
+* try to replace {rgdal}, {rgeos} and {sp} with {sf} - DONE; use `litchi_sf()` function
+* incorporates changes from Hivemapper (see: https://github.com/caiohamamura/flightplanning-R/pull/4)
+* if you prefer to run in in QGIS, please check the [QGIS processing script](https://github.com/gsapijaszko/qgis_r_processing/blob/main/uav_planner_litchi.rsx) available on [qgis r processing repo](https://github.com/gsapijaszko/qgis_r_processing).
 
 ## New function for testing
  * `litchi_sf()`
