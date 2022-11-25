@@ -268,6 +268,7 @@ litchi.plan = function(roi,
   transform = rgdal::rawTransform(roi@proj4string@projargs, wgs84, n=nrow(waypoints), x=waypoints[,1], y=waypoints[,2])
   lats = transform[[2]]
   lngs = transform[[1]]
+  photos = waypoints[,4]
   graphics::plot(waypoints[,1:2])
   graphics::polygon(roi@polygons[[1]]@Polygons[[1]]@coords)
 
@@ -286,13 +287,16 @@ litchi.plan = function(roi,
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
   dfLitchi$altitude.m. = flight.params@height
+  dfLitchi$altitudemode = 1
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_distinterval = flight.params@ground.height
+  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs
+  dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
-
+  dfLitchi$actiontype1 = 5
+  dfLitchi$actionparam1 = gimbal.pitch.angle
 
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
