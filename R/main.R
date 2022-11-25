@@ -1,6 +1,6 @@
 MIN_PHOTO_INTERVAL = 2
 DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
-
+MAX_WAYPOINTS = 99
 
 #'  Function to generate Litchi csv flight plan
 #'
@@ -379,13 +379,15 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
 #' @param side.overlap desired width overlap between photos, default 0.8
 #' @param front.overlap desired height overlap between photos, default 0.8
 #' @param flight.speed.kmh flight speed in km/h, default 54.
+#' @param max.gsd maximum ground resolution
 #'
 #' @examples
 #' params = flight.parameters(
 #'   gsd = 4,
 #'   side.overlap = 0.8,
 #'   front.overlap = 0.8,
-#'   flight.speed.kmh = 54
+#'   flight.speed.kmh = 54,
+#'   max.gsd = 0
 #' )
 #'
 #' @export
@@ -397,7 +399,8 @@ flight.parameters = function(
   image.height.px = 3000,
   side.overlap = 0.8,
   front.overlap = 0.8,
-  flight.speed.kmh = 54) {
+  flight.speed.kmh = 54,
+  max.gsd = 0) {
 
   if (is.na(gsd) == is.na(height)) {
     stop("You must specify either gsd or height!")
@@ -409,6 +412,16 @@ flight.parameters = function(
     mult.factor = (height / focal.length35)
     diag.ground = DIAG_35MM * mult.factor
     gsd = diag.ground / image.diag.px * 100
+    if ((max.gsd != 0) && (gsd > max.gsd)) {
+      height = height * max.gsd / gsd
+      warning(paste0("GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height))
+      # Repeat as a Warning message because warnings are not always getting through
+      message("WARNING: GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height)
+      mult.factor = (height / focal.length35)
+      diag.ground = DIAG_35MM * mult.factor
+      gsd = diag.ground / image.diag.px * 100
+      message("Final GSD is ", gsd)
+    }
     groundWidth = image.width.px * gsd / 100
   } else {
     groundWidth = image.width.px * gsd / 100
@@ -433,18 +446,25 @@ flight.parameters = function(
   groundAllowedOffset = groundHeight - groundHeightOverlap
   photoInterval = groundAllowedOffset / flightSpeedMs
   if (photoInterval < MIN_PHOTO_INTERVAL) {
-    photoInterval = 2
+    photoInterval = MIN_PHOTO_INTERVAL
     flightSpeedMs = groundAllowedOffset / photoInterval
-    flight.speed.kmh = flightSpeedMs*3.6
+    flight.speed.kmh = flightSpeedMs * 3.6
     warning(paste0("Speed had to be lowered because frequency of photos would be too high
-  New speed: ", flight.speed.kmh, "km/h"))
-  } else if ((photoInterval %% 1) > 1e-4) {
-    photoInterval = ceiling(photoInterval)
+        New speed: ", flight.speed.kmh, " km/h"))
+    # Repeat as a Warning message because warnings are not always getting through
+    message("WARNING: Speed had to be lowered because frequency of photos would be too high
+        New speed: ", flight.speed.kmh, " km/h")
+  } else if ((photoInterval %% .1) > 1e-4) {
+    # Allow 0.1s resolution because integer seconds blocks useful drone speeds
+    photoInterval = ceiling(photoInterval * 10) / 10
     flightSpeedMs = groundAllowedOffset / photoInterval
     flight.speed.kmh = flightSpeedMs*3.6
-    warning(paste0("Speed lowered to ", flight.speed.kmh, "km/h to round up photo interval time\n"))
+    warning(paste0("Speed lowered to ", flight.speed.kmh, " km/h to round up photo interval time
+                   to ", photoInterval, " seconds"))
+    # Repeat as a Warning message because warnings are not always getting through
+    message("WARNING: Speed lowered to ", flight.speed.kmh, " km/h to round up photo interval
+            time to ", photoInterval, " seconds")
   }
-
   params = methods::new("Flight Parameters")
   params@height = height
   params@gsd = gsd
