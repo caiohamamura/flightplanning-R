@@ -189,15 +189,9 @@ litchi.plan = function(roi,
   colnames(wptsMatrix) = colnames=c("x", "y", "isCurve", "takePhoto")
   mat_pos = 1
   for (i in seq_len(nrow(waypoints))) {
+#    i <- 6
+#    mat_pos <- 11
     curve = as.vector(adjustedCurves[as.character(i),])
-
-    # From R 4.2.0 onwards:
-    # "as.vector() gains a data.frame method which returns a simple
-    # named list, also clearing a long standing ‘FIXME’ to enable
-    # as.vector(<data.frame>, mode="list").  This breaks code relying
-    # on as.vector(<data.frame>) to return the unchanged data frame."
-    # therefore changing curve[,1:2] to curve[1,2] and removing cbind
-
     hasCurve = !anyNA(curve)
     if (hasCurve) {
       if (curve$before) {
