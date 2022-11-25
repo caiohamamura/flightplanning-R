@@ -287,14 +287,14 @@ litchi.plan = function(roi,
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
   dfLitchi$altitude.m. = flight.params@height
-  dfLitchi$altitudemode = 1
+  dfLitchi$altitudemode = 1 # Above ground (Fixed AGL)
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs
+#  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs
   dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
-  dfLitchi$gimbalmode = 2
+  dfLitchi$gimbalmode = 2 # Interpolated between waypoints
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
 #  dfLitchi$actiontype1 = 5
 #  dfLitchi$actionparam1 = gimbal.pitch.angle
