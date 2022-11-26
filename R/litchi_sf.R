@@ -20,12 +20,7 @@ MAX_WAYPOINTS = 99
 #' @param starting.point numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
 #' @param launch list(0,0) launch point coordinates (x, y), has to be provided in the same metric CRS as roi
 #' @param grid logical (default FALSE). Change direction of the fly lines over polygon from parallel to perpendicular
-#'
-#' @note this function will feed the csv flight plan with the `gimbal.pitch.angle`
-#' and the `photo time interval` for each waypoint, but those are not supported
-#' by Litchi yet, although they are present in the exported csv from the
-#' Litchi hub platform, though it may be supported in the future; when it does
-#' the function will already work with this feature.
+#' @param distancemethod logical (default FALSE). Change shutter interval from time to distance
 #'
 #' @examples
 #' library(flightplanning)
@@ -68,7 +63,8 @@ litchi_sf = function(roi,
                      max.flight.time = 15,
                      starting.point = 1,
                      launch = list(0, 0),
-                     grid = FALSE) {
+                     grid = FALSE,
+                     distancemethod = FALSE) {
 
   # Check parameters
   if (class(roi)[1] != "sf") {
@@ -89,6 +85,9 @@ litchi_sf = function(roi,
     stop("Flight parameters is not an instance returned from flight.parameters()")
   if (!is.logical(grid)) {
     stop("grid has to be TRUE or FALSE")
+  }
+  if (!is.logical(distancemethod)) {
+    stop("distancemethod has to be TRUE or FALSE")
   }
 
   # Parameters calculated
@@ -319,12 +318,13 @@ litchi_sf = function(roi,
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-#  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
-  dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
+  if (distancemethod = TRUE) {
+    dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
+  } else {
+    dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
+  }
   dfLitchi$gimbalmode = 2 # Interpolate gimbal position between waypoints
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
-#  dfLitchi$actiontype1 = 5
-#  dfLitchi$actionparam1 = gimbal.pitch.angle
 
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
