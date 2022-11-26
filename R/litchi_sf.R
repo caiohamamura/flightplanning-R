@@ -314,16 +314,17 @@ litchi_sf = function(roi,
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
   dfLitchi$altitude.m. = flight.params@height
-  dfLitchi$altitudemode = 1
+  dfLitchi$altitudemode = 1 # AGL handling
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
+#  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
   dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
+  dfLitchi$gimbalmode = 2 # Interpolate gimbal position between waypoints
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
-  dfLitchi$actiontype1 = 5
-  dfLitchi$actionparam1 = gimbal.pitch.angle
+#  dfLitchi$actiontype1 = 5
+#  dfLitchi$actionparam1 = gimbal.pitch.angle
 
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
