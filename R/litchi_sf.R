@@ -318,7 +318,7 @@ litchi_sf = function(roi,
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  if (distancemethod != TRUE) {
+  if (!isTRUE(distancemethod)) {
     dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
   } else {
     dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
