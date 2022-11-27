@@ -407,10 +407,9 @@ flight.parameters = function(
   flight.speed.kmh = 54,
   max.gsd = 0) {
 
-  if (is.na(gsd) == is.na(height)) {
+  if (is.na(gsd) & is.na(height)) {
     stop("You must specify either gsd or height!")
   }
-
 
   image.diag.px = sqrt(image.width.px^2 + image.height.px^2)
   if (is.na(gsd)) {
