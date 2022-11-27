@@ -512,15 +512,13 @@ litchi_sf = function(roi,
 #'
 #' @rdname flight.summary
 #'
-#' @param flight.plan
+#' @param flight.plan Flight Plan results.
+#' @param flight.params Flight Parameters. parameters calculated from flight.parameters()
 #'
 #' @examples
-#' params = flight.parameters(
-#'   gsd = 4,
-#'   side.overlap = 0.8,
-#'   front.overlap = 0.8,
-#'   flight.speed.kmh = 54,
-#'   max.gsd = 0
+#' plansummary = flight.summary(
+#'                      flight.params,
+#'                      flight.plan,
 #' )
 #'
 #' @export
@@ -541,15 +539,17 @@ flight.summary = function(
   message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
   message(" km/h")
   message("Total number of waypoints", appendLF = FALSE)
-  message(nrow(waypoints))
+  message(nrow(flight.plan@waypoints))
   message("Flight lines angle: ", appendLF = FALSE)
-  message(round(alpha, 4))
+  message(round(flight.plan@alpha, 4))
   message('Total flight time: ', appendLF = FALSE)
-  message(round(totalFlightTime, 4))
-  return (params)
+  message(round(totalflight.plan@FlightTime, 4))
+  return ()
 }
 
 # # Example
 # #
 # (PlanSummary = flight.summary(
+#                       flight.params,
+#                       flight.plan
 # ))
