@@ -504,3 +504,52 @@ litchi_sf = function(roi,
 
   return (waypoints)
 }
+
+#' Function to print flight plan summary
+#'
+#' This function will print messages with flight plan parameters,
+#' like flight time, photo interval
+#'
+#' @rdname flight.summary
+#'
+#' @param flight.plan
+#'
+#' @examples
+#' params = flight.parameters(
+#'   gsd = 4,
+#'   side.overlap = 0.8,
+#'   front.overlap = 0.8,
+#'   flight.speed.kmh = 54,
+#'   max.gsd = 0
+#' )
+#'
+#' @export
+flight.summary = function(
+    ) {
+  message("#####################")
+  message("## Flight settings ## ")
+  message("#####################")
+  message("Min shutter speed: ", appendLF = FALSE)
+  message(flight.params@minimum.shutter.speed)
+  message("Photo interval:    ", appendLF = FALSE)
+  message(flight.params@photo.interval, appendLF = FALSE)
+  message(" s")
+  message("Photo distance:    ", appendLF = FALSE)
+  message(flight.params@photo.interval * flight.params@flight.speed.kmh / 3.6, appendLF = FALSE)
+  message(" m")
+  message("Flight speed:      ", appendLF = FALSE)
+  message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
+  message(" km/h")
+  message("Total number of waypoints", appendLF = FALSE)
+  message(nrow(waypoints))
+  message("Flight lines angle: ", appendLF = FALSE)
+  message(round(alpha, 4))
+  message('Total flight time: ', appendLF = FALSE)
+  message(round(totalFlightTime, 4))
+  return (params)
+}
+
+# # Example
+# #
+# (PlanSummary = flight.summary(
+# ))
