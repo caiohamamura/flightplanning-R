@@ -1,9 +1,7 @@
-# ---------------------------------------------------------------------------------------------
-# parametry
-
 Wysokosc <- 100
 output = ("mytest/lot.csv")
-roi = sf::st_read("mytest/lasek.gpkg")
+roi = sf::st_read("mytest/uav_bug.gpkg", layer = "Zalew")
+# roi = sf::st_read("mytest/lasek.gpkg")
 # roi = sf::st_read(system.file("extdata", "exampleBoundary.shp", package="flightplanning"))
 if(nrow(roi) > 1) {
   roi <- sf::st_union(roi) |>
@@ -23,23 +21,28 @@ if(nrow(roi) > 1) {
 
 output <- "mytest/fly.csv"
 
-params <- flight.parameters(
+params <- flightplanning::flight.parameters(
   height = 120,
   focal.length35 = 24,
   flight.speed.kmh = 24,
-  side.overlap = 0.91,
+  side.overlap = 0.8,
   front.overlap = 0.7
 )
 
-litchi_sf(roi,
-          output,
-          params,
-          gimbal.pitch.angle = -90,
-          flight.lines.angle = -1,
-          max.waypoints.distance = 400,
-          max.flight.time = 18,
-          grid = FALSE
+flightplanning::litchi_sf(roi,
+                          output,
+                          params,
+                          gimbal.pitch.angle = -90,
+                          flight.lines.angle = -1,
+                          max.waypoints.distance = 2000,
+                          max.flight.time = 15,
+                          starting.point = 1,
+                          grid = FALSE
+                          # ,
+                          # launch = list(344800, 383000)
 )
+flightplanning::flight.summary(params)
+
 
 flight.params <- params
 gimbal.pitch.angle = -90
@@ -49,22 +52,11 @@ max.flight.time = 18
 starting.point = 1
 launch = list(344800, 383000)
 grid = FALSE
+distancemethod = FALSE
 
-flightplanning::litchi_sf(roi,
-  output,
-  params,
-  gimbal.pitch.angle = -90,
-  flight.lines.angle = -1,
-  max.waypoints.distance = 2000,
-  max.flight.time = 15,
-  starting.point = 1,
-  grid = FALSE,
-  launch = list(344800, 383000)
-)
+MAX_WAYPOINTS = 99
 
 
-# ---------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------
 #'  Function to generate Litchi csv flight plan
 #'
 #' @rdname litchi_sf
@@ -84,12 +76,7 @@ flightplanning::litchi_sf(roi,
 #' @param starting.point numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
 #' @param launch list(0,0) launch point coordinates (x, y), has to be provided in the same metric CRS as roi
 #' @param grid logical (default FALSE). Change direction of the fly lines over polygon from parallel to perpendicular
-#'
-#' @note this function will feed the csv flight plan with the `gimbal.pitch.angle`
-#' and the `photo time interval` for each waypoint, but those are not supported
-#' by Litchi yet, although they are present in the exported csv from the
-#' Litchi hub platform, though it may be supported in the future; when it does
-#' the function will already work with this feature.
+#' @param distancemethod logical (default FALSE). Change shutter interval from time to distance
 #'
 #' @examples
 #' library(flightplanning)
@@ -132,7 +119,8 @@ litchi_sf = function(roi,
                      max.flight.time = 15,
                      starting.point = 1,
                      launch = list(0, 0),
-                     grid = FALSE) {
+                     grid = FALSE,
+                     distancemethod = FALSE) {
 
   # Check parameters
   if (class(roi)[1] != "sf") {
@@ -153,6 +141,9 @@ litchi_sf = function(roi,
     stop("Flight parameters is not an instance returned from flight.parameters()")
   if (!is.logical(grid)) {
     stop("grid has to be TRUE or FALSE")
+  }
+  if (!is.logical(distancemethod)) {
+    stop("distancemethod has to be TRUE or FALSE")
   }
 
   # Parameters calculated
@@ -281,11 +272,14 @@ litchi_sf = function(roi,
                                      angle = alpha,
                                      minAngle = 80)
   row.names(adjustedCurves) <- adjustedCurves$index
+
   # Concatenate regular waypoints with curve waypoints
   wptsMatrix = as.data.frame(matrix(nrow=nrow(waypoints)+nrow(adjustedCurves),ncol=4))
   colnames(wptsMatrix) = colnames=c("x", "y", "isCurve", "takePhoto")
   mat_pos = 1
   for (i in seq_len(nrow(waypoints))) {
+    #    i <- 6
+    #    mat_pos <- 11
     curve = as.vector(adjustedCurves[as.character(i), ])
     hasCurve = !anyNA(curve)
     if (hasCurve) {
@@ -375,17 +369,18 @@ litchi_sf = function(roi,
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
   dfLitchi$altitude.m. = flight.params@height
-  dfLitchi$altitudemode = 1
+  dfLitchi$altitudemode = 1 # AGL handling
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
-  dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
+  if (!isTRUE(distancemethod)) {
+    dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
+  } else {
+    dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs * photos
+  }
+  dfLitchi$gimbalmode = 2 # Interpolate gimbal position between waypoints
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
-  dfLitchi$actiontype1 = 5
-  dfLitchi$actionparam1 = gimbal.pitch.angle
-
 
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
@@ -407,15 +402,14 @@ litchi_sf = function(roi,
     splits = split.data.frame(dfLitchi, f = dfLitchi$split)
 
 
-# ---------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     if (hasCustomLaunch) {
       p0x = launch[[1]][1]
       p0y = launch[[2]][1]
 
-      wgs84 = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
       message("adding custom launch point to submissions")
 
-      # launch84 = rgdal::rawTransform(roi@proj4string@projargs, wgs84, as.integer(1), launch[[1]], launch[[2]])
       launch84 <- sf::st_point(x = c(launch[[1]], launch[[2]])) |>
         sf::st_sfc(crs = roiCRS) |>
         sf::st_transform(crs = "EPSG:4326") |>
@@ -430,22 +424,18 @@ litchi_sf = function(roi,
           splits[[i]] = rbind(overage, splits[[i]])
         }
 
-        # i <- 1
-        # mercator = rgdal::rawTransform(wgs84, roi@proj4string@projargs, nrow(splits[[i]]), splits[[i]]$longitude, splits[[i]]$latitude)
         mercator = splits[[i]] |>
           sf::st_as_sf(coords = c("longitude", "latitude"), crs = "EPSG:4326") |>
           sf::st_transform(crs = roiCRS) |>
           subset(select = "geometry") |>
           sf::st_coordinates()
 
-        # p1x = mercator[[1]][1]
-        # p1y = mercator[[2]][1]
         p1x = as.numeric(mercator[1, 1])
         p1y = as.numeric(mercator[1, 2])
 
         dx = p1x - p0x
         dy = p1y - p0y
-        distance = flightplanning:::earth.dist(launch84[[1]][1], launch84[[2]][1], splits[[i]]$longitude[1], splits[[i]]$latitude[1])
+        distance = earth.dist(launch84[[1]][1], launch84[[2]][1], splits[[i]]$longitude[1], splits[[i]]$latitude[1])
 
         interpPtsToAdd = floor(distance / max.waypoints.distance)
         nPtsToAdd = 1 + interpPtsToAdd
@@ -470,22 +460,14 @@ litchi_sf = function(roi,
           }
         }
 
-        # wgs84D = rgdal::rawTransform(roi@proj4string@projargs, wgs84, nrow(toConvert), toConvert$lat, toConvert$lon)
-
         wgs84D = toConvert |>
           sf::st_as_sf(coords = c("lon", "lat"), crs = roiCRS) |>
           sf::st_transform(crs = "EPSG:4326") |>
           subset(select = "geometry") |>
           sf::st_coordinates()
 
-
-        # ptsToAdd$latitude = wgs84D[[2]]
-        # ptsToAdd$longitude = wgs84D[[1]]
-
         ptsToAdd$latitude = wgs84D[ ,2]
         ptsToAdd$longitude = wgs84D[ ,1]
-
-
 
         splitSize = nrow(splits[[i]])
         totalSize = splitSize + nPtsToAdd
@@ -521,9 +503,8 @@ litchi_sf = function(roi,
         splits[[newIdx]]$split = newIdx
       }
     }
-
-# ---------------------------------------------------------------------------------------------
-
+    # ---------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
 
     if (nrow(waypoints) > MAX_WAYPOINTS) {
       message("Your flight was split into ", length(splits), " sub-flights, because the number of waypoints ", nrow(waypoints), " exceeds the maximum of ", MAX_WAYPOINTS, ".")
@@ -540,7 +521,7 @@ litchi_sf = function(roi,
       write.csv(dataSplit[,-ncol(dataSplit)], output2, row.names = FALSE)
       message(output2)
     }
-    output2 = paste0(first, "_entire", second)
+    output2 = paste0(first, "entire", second)
     write.csv(dfLitchi, output2, row.names = FALSE)
     message("The entire flight plan was saved as:")
     message(output2)
@@ -578,8 +559,56 @@ litchi_sf = function(roi,
   message(round(totalFlightTime, 4))
 
   return (waypoints)
-
 }
+
+#' Function to print flight plan summary
+#'
+#' This function will print messages with flight plan parameters,
+#' like flight time, photo interval
+#'
+#' @rdname flight.summary
+#'
+#' @param flight.plan Flight Plan results.
+#' @param flight.params Flight Parameters. parameters calculated from flight.parameters()
+#'
+#' @examples
+#' plansummary = flight.summary(
+#'                      flight.params,
+#'                      flight.plan,
+#' )
+#'
+#' @export
+flight.summary = function(
+) {
+  message("#####################")
+  message("## Flight settings ## ")
+  message("#####################")
+  message("Min shutter speed: ", appendLF = FALSE)
+  message(flight.params@minimum.shutter.speed)
+  message("Photo interval:    ", appendLF = FALSE)
+  message(flight.params@photo.interval, appendLF = FALSE)
+  message(" s")
+  message("Photo distance:    ", appendLF = FALSE)
+  message(flight.params@photo.interval * flight.params@flight.speed.kmh / 3.6, appendLF = FALSE)
+  message(" m")
+  message("Flight speed:      ", appendLF = FALSE)
+  message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
+  message(" km/h")
+  message("Total number of waypoints", appendLF = FALSE)
+  message(nrow(flight.plan@waypoints))
+  message("Flight lines angle: ", appendLF = FALSE)
+  message(round(flight.plan@alpha, 4))
+  message('Total flight time: ', appendLF = FALSE)
+  message(round(totalflight.plan@FlightTime, 4))
+  return ()
+}
+
+# # Example
+# #
+# (PlanSummary = flight.summary(
+#                       flight.params,
+#                       flight.plan
+# ))
 
 f <- list.files(path = "mytest", pattern = ".csv", full.names = TRUE)
 unlink(f)

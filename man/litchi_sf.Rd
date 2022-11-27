@@ -14,7 +14,8 @@ litchi_sf(
   max.flight.time = 15,
   starting.point = 1,
   launch = list(0, 0),
-  grid = FALSE
+  grid = FALSE,
+  distancemethod = FALSE
 )
 }
 \arguments{
@@ -40,19 +41,14 @@ time, it will be splitted into smaller missions.}
 \item{launch}{list(0,0) launch point coordinates (x, y), has to be provided in the same metric CRS as roi}
 
 \item{grid}{logical (default FALSE). Change direction of the fly lines over polygon from parallel to perpendicular}
+
+\item{distancemethod}{logical (default FALSE). Change shutter interval from time to distance}
 }
 \value{
 A data frame with the waypoints calculated for the flight plan
 }
 \description{
 Function to generate Litchi csv flight plan
-}
-\note{
-this function will feed the csv flight plan with the `gimbal.pitch.angle`
-and the `photo time interval` for each waypoint, but those are not supported
-by Litchi yet, although they are present in the exported csv from the
-Litchi hub platform, though it may be supported in the future; when it does
-the function will already work with this feature.
 }
 \examples{
 library(flightplanning)

@@ -346,8 +346,6 @@ litchi_sf = function(roi,
     splits = split.data.frame(dfLitchi, f = dfLitchi$split)
 
 
-# ---------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------
     if (hasCustomLaunch) {
       p0x = launch[[1]][1]
       p0y = launch[[2]][1]
@@ -447,8 +445,6 @@ litchi_sf = function(roi,
         splits[[newIdx]]$split = newIdx
       }
     }
-# ---------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------
 
     if (nrow(waypoints) > MAX_WAYPOINTS) {
       message("Your flight was split into ", length(splits), " sub-flights, because the number of waypoints ", nrow(waypoints), " exceeds the maximum of ", MAX_WAYPOINTS, ".")
@@ -480,76 +476,13 @@ litchi_sf = function(roi,
   }
   graphics::text(waypoints[,1], waypoints[,2], seq_along(waypoints[,1]), pos=3)
 
+  #update flight.params
+  flight.params@number.of.waypoints <- nWaypoints
+  flight.params@alpha <- alpha
+  flight.params@total.flight.time <- totalFlightTime
 
-  message("#####################")
-  message("## Flight settings ## ")
-  message("#####################")
-  message("Min shutter speed: ", appendLF = FALSE)
-  message(flight.params@minimum.shutter.speed)
-  message("Photo interval:    ", appendLF = FALSE)
-  message(flight.params@photo.interval, appendLF = FALSE)
-  message(" s")
-  message("Photo distance:    ", appendLF = FALSE)
-  message(flight.params@photo.interval * flight.params@flight.speed.kmh / 3.6, appendLF = FALSE)
-  message(" m")
-  message("Flight speed:      ", appendLF = FALSE)
-  message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
-  message(" km/h")
-  message("Total number of waypoints", appendLF = FALSE)
-  message(nrow(waypoints))
-  message("Flight lines angle: ", appendLF = FALSE)
-  message(round(alpha, 4))
-  message('Total flight time: ', appendLF = FALSE)
-  message(round(totalFlightTime, 4))
+  # messages
+  flight.summary(flight.params)
 
   return (waypoints)
 }
-
-#' Function to print flight plan summary
-#'
-#' This function will print messages with flight plan parameters,
-#' like flight time, photo interval
-#'
-#' @rdname flight.summary
-#'
-#' @param flight.plan Flight Plan results.
-#' @param flight.params Flight Parameters. parameters calculated from flight.parameters()
-#'
-#' @examples
-#' plansummary = flight.summary(
-#'                      flight.params,
-#'                      flight.plan,
-#' )
-#'
-#' @export
-flight.summary = function(
-    ) {
-  message("#####################")
-  message("## Flight settings ## ")
-  message("#####################")
-  message("Min shutter speed: ", appendLF = FALSE)
-  message(flight.params@minimum.shutter.speed)
-  message("Photo interval:    ", appendLF = FALSE)
-  message(flight.params@photo.interval, appendLF = FALSE)
-  message(" s")
-  message("Photo distance:    ", appendLF = FALSE)
-  message(flight.params@photo.interval * flight.params@flight.speed.kmh / 3.6, appendLF = FALSE)
-  message(" m")
-  message("Flight speed:      ", appendLF = FALSE)
-  message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
-  message(" km/h")
-  message("Total number of waypoints", appendLF = FALSE)
-  message(nrow(flight.plan@waypoints))
-  message("Flight lines angle: ", appendLF = FALSE)
-  message(round(flight.plan@alpha, 4))
-  message('Total flight time: ', appendLF = FALSE)
-  message(round(totalflight.plan@FlightTime, 4))
-  return ()
-}
-
-# # Example
-# #
-# (PlanSummary = flight.summary(
-#                       flight.params,
-#                       flight.plan
-# ))
