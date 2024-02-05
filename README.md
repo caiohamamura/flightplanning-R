@@ -1,23 +1,118 @@
-flightplanning-R
-================================
-[![CRAN](https://www.r-pkg.org/badges/version/flightplanning)](https://cran.r-project.org/web/packages/flightplanning)
-[![Build Status](https://travis-ci.com/caiohamamura/flightplanning-R.svg)](https://travis-ci.com/caiohamamura/flightplanning-R)
-[![codecov](https://codecov.io/gh/caiohamamura/flightplanning-R/branch/master/graph/badge.svg)](https://codecov.io/gh/caiohamamura/flightplanning-R)
-![license](https://img.shields.io/badge/license-MIT-green.svg) 
-![Downloads](https://cranlogs.r-pkg.org/badges/grand-total/flightplanning)
+# flightplanning-R
 
-An R package for generating UAV flight plans, specially for Litchi.
+![license](https://img.shields.io/badge/license-MIT-green.svg) 
+
+An R package for generating UAV flight plans, especially for Litchi.
 
 <img src="man/images/MANEJO_4.0_alta_velocidade.gif" alt="Animation of drone taking photos along the flight plan" align="center"/>
 
 ## Installation
 
-This package should be installed using the devtools.
+This version of package should be installed using the devtools/remotes:
 
 ```r
 # install.packages("devtools")
-devtools::install_github("caiohamamura/flightplanning-R")
+devtools::install_github("gsapijaszko/flightplanning-R")
 ```
+
+## This fork
+
+* adopts the package to R >= 4.2.0 (backward compatible) - DONE
+* added `grid = FALSE | TRUE` parameter, which sets the flying direction over polygon - DONE
+* added input for `sf` polygons -- `roi` can be read with `sf::st_read()` - DONE
+* try to replace {rgdal}, {rgeos} and {sp} with {sf} - DONE; use `litchi_sf()` function
+* incorporates changes from Hivemapper (see: https://github.com/caiohamamura/flightplanning-R/pull/4)
+* if you prefer to run in in QGIS, please check the [QGIS processing script](https://github.com/gsapijaszko/qgis_r_processing/blob/main/uav_planner_litchi.rsx) available on [qgis r processing repo](https://github.com/gsapijaszko/qgis_r_processing).
+
+## New function for testing
+ * `litchi_sf()`
+
+### Example usage
+
+``` r
+library(flightplanning)
+f <- "mytest/lasek.gpkg"
+roi <- sf::st_read(f)
+
+output <- "mytest/fly.csv"
+
+params <- flight.parameters(
+  height = 120,
+  focal.length35 = 24,
+  flight.speed.kmh = 24,
+  side.overlap = 0.8,
+  front.overlap = 0.8
+)
+
+litchi_sf(roi,
+  output,
+  params,
+  gimbal.pitch.angle = -90,
+  flight.lines.angle = -1,
+  max.waypoints.distance = 400,
+  max.flight.time = 18,
+  grid = FALSE
+)
+#> #####################
+#> ## Flight settings ##
+#> #####################
+#> Min shutter speed: 1/128
+#> Photo interval:    4 s
+#> Flight speed:      23.364 km/h
+#> Flight lines angle: 104.3223
+#> Total flight time: 16.2097
+```
+
+![](https://i.imgur.com/mG1npRr.png)
+
+Per default `litchi_sf()` takes first polygon from the input layer. If there is a need to run a mission over several polygons, you can union them like:
+
+```r
+if(nrow(roi) > 1) {
+  roi <- sf::st_union(roi)
+}
+
+litchi_sf(roi,
+          output,
+          params,
+          gimbal.pitch.angle = -90,
+          flight.lines.angle = -1,
+          max.waypoints.distance = 400,
+          max.flight.time = 18,
+          grid = FALSE
+)
+#> Your flight was splitted in 2 splits,
+#> because the total time would be 26.91 minutes.
+#> They were saved as:
+#> mytest/fly1.csv
+#> mytest/fly2.csv
+#> The entire flight plan was saved as:
+#> mytest/fly_entire.csv
+#> #####################
+#> ## Flight settings ## 
+#> #####################
+#> Min shutter speed: 1/128
+#> Photo interval:    4 s
+#> Flight speed:      23.364 km/h
+#> Flight lines angle: 104.2442
+#> Total flight time: 26.9055
+```
+![](https://i.imgur.com/Vfr1Bj9.png)
+
+Using `grid = TRUE` parameter you can change the direction of the grid like:
+
+```r
+litchi_sf(roi,
+          output,
+          params,
+          gimbal.pitch.angle = -90,
+          flight.lines.angle = -1,
+          max.waypoints.distance = 400,
+          max.flight.time = 18,
+          grid = TRUE
+)
+```
+![](https://i.imgur.com/MRFkkrO.png)
 
 ## Usage
 There are two main functions available:
@@ -46,6 +141,7 @@ default 2000 (some issues have been reported with distances > 2 Km)
  - `max.flight.time`: maximum flight time. If mission is greater than the estimated time, 
  it will be splitted into smaller missions.
  - `starting.point`: numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
+ - `grid`: boolean (FALSE | TRUE). Change the fly direction over polygon from parallel to perpendicular
  
 ## Authors
  - Caio Hamamura

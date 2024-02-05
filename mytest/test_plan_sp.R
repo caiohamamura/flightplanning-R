@@ -1,68 +1,43 @@
-MIN_PHOTO_INTERVAL = 2
-DIAG_35MM = sqrt(36^2 + 24^2) # Classical 35mm film diagonal
-MAX_WAYPOINTS = 99
+library(flightplanning)
+f <- "mytest/uav_bug.gpkg"
+roi <- sf::st_read(f, layer = "Zalew") |>
+  sf::st_as_sf() |>
+  sf::st_cast("POLYGON")
+roi
+str(roi)
+if(nrow(roi) > 1) {
+  roi <- sf::st_union(roi)
+}
 
-#'  Function to generate Litchi csv flight plan
-#'
-#'
-#' @rdname litchi.plan
-#'
-#' @return A data frame with the waypoints calculated for the flight plan
-#'
-#' @param roi range of interest loaded as an OGR layer, must be in
-#' a metric units projection for working properly
-#' @param output output path for the csv file
-#' @param flight.params Flight Parameters. parameters calculated from flight.parameters()
-#' @param gimbal.pitch.angle gimbal angle for taking photos, default -90 (overriden at flight time)
-#' @param flight.lines.angle angle for the flight lines, default -1 (auto set based on larger direction)
-#' @param max.waypoints.distance maximum distance between waypoints in meters,
-#' default 2000 (some issues have been reported with distances > 2 Km)
-#' @param max.flight.time maximum flight time. If mission is greater than the estimated
-#' time, it will be splitted into smaller missions.
-#' @param starting.point numeric (1, 2, 3 or 4). Change position from which to start the flight, default 1
-#' @param grid logical (default FALSE). Change direction of the fly lines over polygon from parallel to perpendicular
-#'
-#' @note this function will feed the csv flight plan with the `gimbal.pitch.angle`
-#' and the `photo time interval` for each waypoint, but those are not supported
-#' by Litchi yet, although they are present in the exported csv from the
-#' Litchi hub platform, though it may be supported in the future; when it does
-#' the function will already work with this feature.
-#'
-#' @examples
-#' library(flightplanning)
-#' library(rgdal)
-#'
-#' exampleBoundary = readOGR(
-#'                           system.file("extdata",
-#'                                       "exampleBoundary.shp",
-#'                                       package="flightplanning"
-#'                                      ),
-#'                           "exampleBoundary")
-#' outPath = tempfile(fileext=".csv")
-#'
-#' flight.params = flight.parameters(
-#'   gsd = 4,
-#'   side.overlap = 0.8,
-#'   front.overlap = 0.8,
-#'   flight.speed.kmh = 54
-#' )
-#'
-#' litchi.plan(exampleBoundary,
-#'             outPath,
-#'             flight.params,
-#'             flight.lines.angle = -1,
-#'             max.waypoints.distance = 2000,
-#'             max.flight.time = 15)
-#'
-#'
-#' @export
-#' @import rgeos rgdal
-#' @importFrom graphics text
-#' @importFrom shotGroups getMinBBox
-#' @importFrom methods slot
-#' @importFrom sp Line Lines SpatialLines
-#' @importFrom utils data read.csv write.csv
-#'
+output <- "mytest/fly.csv"
+
+params <- flight.parameters(
+  height = 120,
+  focal.length35 = 24,
+  flight.speed.kmh = 24,
+  side.overlap = 0.8,
+  front.overlap = 0.8
+)
+
+litchi.plan(roi,
+          output,
+          params,
+          gimbal.pitch.angle = -90,
+          flight.lines.angle = -1,
+          max.waypoints.distance = 400,
+          max.flight.time = 18,
+          grid = FALSE
+)
+
+flight.params <- params
+gimbal.pitch.angle = -90
+flight.lines.angle = -1
+max.waypoints.distance = 400
+max.flight.time = 18
+starting.point = 1
+grid = FALSE
+
+
 litchi.plan = function(roi,
                        output,
                        flight.params,
@@ -103,7 +78,7 @@ litchi.plan = function(roi,
   } else {
     # if angle not specified use minimum possible bounding box
     minBbox = shotGroups::getMinBBox(vertices)
-#    minBbox = getMinBBox(vertices)
+    #    minBbox = getMinBBox(vertices)
   }
 
   if (grid == FALSE) {
@@ -156,10 +131,10 @@ litchi.plan = function(roi,
   # Calculate translated x and y from
   # angles and offsets from centroid
   xys = data.frame(
-                   x = -xWidths  * sin(rads) +
-                        yHeights * cos(rads),
-                   y = xWidths   * cos(rads) +
-                       yHeights  * sin(rads))
+    x = -xWidths  * sin(rads) +
+      yHeights * cos(rads),
+    y = xWidths   * cos(rads) +
+      yHeights  * sin(rads))
 
   # Initial waypoints to intersect waypoints
   waypoints = xys + rep(centroid, each=nrow(xys))
@@ -174,15 +149,15 @@ litchi.plan = function(roi,
 
   #
   #
-#  wktLines = paste(apply(waypoints, 1, paste, collapse=" "), collapse=", ")
-#  wktLines = paste("LINESTRING(", wktLines,")")
-#  gLines = rgeos::readWKT(wktLines, p4s = roi@proj4string)
-#  inter = rgeos::gIntersection(rgeos::gBuffer(roi, width = flightLineDistance), gLines)
-#  nLines = length(inter@lines[[1]]@Lines)
+  #  wktLines = paste(apply(waypoints, 1, paste, collapse=" "), collapse=", ")
+  #  wktLines = paste("LINESTRING(", wktLines,")")
+  #  gLines = rgeos::readWKT(wktLines, p4s = roi@proj4string)
+  #  inter = rgeos::gIntersection(rgeos::gBuffer(roi, width = flightLineDistance), gLines)
+  #  nLines = length(inter@lines[[1]]@Lines)
 
-#  flightLines = t(sapply(inter@lines[[1]]@Lines, function(x) x@coords))
+  #  flightLines = t(sapply(inter@lines[[1]]@Lines, function(x) x@coords))
 
-# RSB
+  # RSB
   glist <- vector(mode="list", length=nrow(waypoints)-1)
   for (i in seq_along(glist)) glist[[i]] <- sp::Lines(list(sp::Line(waypoints[c(i, (i+1)),])), ID=as.character(i))
   gLines <- sp::SpatialLines(glist, proj4string=slot(roi, "proj4string"))
@@ -190,7 +165,7 @@ litchi.plan = function(roi,
   nLines <- length(inter)
   flightLines <- t(sapply(slot(inter, "lines"), function(x) slot(slot(x,  "Lines")[[1]], "coords")))
 
-# RSB
+  # RSB
   flightLines = flightLines[,c(1,3,2,4)]
 
 
@@ -199,14 +174,14 @@ litchi.plan = function(roi,
   waypoints[seq(2, nLines*2, 2),] = flightLines[, 3:4]
 
   # Calculate curves points to allow smooth curves
-  curvedPoints = outerCurvePoints(waypoints = waypoints,
-                  angle = alpha,
-                  flightLineDistance = flightLineDistance)
+  curvedPoints = flightplanning:::outerCurvePoints(waypoints = waypoints,
+                                  angle = alpha,
+                                  flightLineDistance = flightLineDistance)
 
   # Adjust curve points position to avoid acute angles
-  adjustedCurves = adjustAcuteAngles(xy = curvedPoints,
-                   angle = alpha,
-                   minAngle = 80)
+  adjustedCurves = flightplanning:::adjustAcuteAngles(xy = curvedPoints,
+                                     angle = alpha,
+                                     minAngle = 80)
 
   # Concatenate regular waypoints with curve waypoints
   wgs84 = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
@@ -214,15 +189,9 @@ litchi.plan = function(roi,
   colnames(wptsMatrix) = colnames=c("x", "y", "isCurve", "takePhoto")
   mat_pos = 1
   for (i in seq_len(nrow(waypoints))) {
+#    i <- 6
+#    mat_pos <- 11
     curve = as.vector(adjustedCurves[as.character(i),])
-
-    # From R 4.2.0 onwards:
-    # "as.vector() gains a data.frame method which returns a simple
-    # named list, also clearing a long standing ‘FIXME’ to enable
-    # as.vector(<data.frame>, mode="list").  This breaks code relying
-    # on as.vector(<data.frame>) to return the unchanged data frame."
-    # therefore changing curve[,1:2] to curve[1,2] and removing cbind
-
     hasCurve = !anyNA(curve)
     if (hasCurve) {
       if (curve$before) {
@@ -268,7 +237,6 @@ litchi.plan = function(roi,
   transform = rgdal::rawTransform(roi@proj4string@projargs, wgs84, n=nrow(waypoints), x=waypoints[,1], y=waypoints[,2])
   lats = transform[[2]]
   lngs = transform[[1]]
-  photos = waypoints[,4]
   graphics::plot(waypoints[,1:2])
   graphics::polygon(roi@polygons[[1]]@Polygons[[1]]@coords)
 
@@ -287,17 +255,13 @@ litchi.plan = function(roi,
   dfLitchi$latitude = lats
   dfLitchi$longitude = lngs
   dfLitchi$altitude.m. = flight.params@height
-  dfLitchi$altitudemode = 1 # Above ground (Fixed AGL)
   dfLitchi$speed.m.s. = flightSpeedMs
   dfLitchi$heading.deg. = c(finalHeading, 90)
   dfLitchi$curvesize.m. = 0
   dfLitchi$curvesize.m.[waypoints$isCurve==1] = flightLineDistance*0.5
-#  dfLitchi$photo_distinterval = flight.params@photo.interval * flightSpeedMs
-  dfLitchi$photo_timeinterval = flight.params@photo.interval * photos
-  dfLitchi$gimbalmode = 2 # Interpolated between waypoints
+  dfLitchi$photo_distinterval = flight.params@ground.height
   dfLitchi$gimbalpitchangle = gimbal.pitch.angle
-#  dfLitchi$actiontype1 = 5
-#  dfLitchi$actionparam1 = gimbal.pitch.angle
+
 
   # Split the flight if is too long
   dists = sqrt(diff(waypoints[,1])**2+diff(waypoints[,2])**2)
@@ -384,48 +348,36 @@ because the total time would be ", round(totalFlightTime, 2), " minutes.")
 #' @param side.overlap desired width overlap between photos, default 0.8
 #' @param front.overlap desired height overlap between photos, default 0.8
 #' @param flight.speed.kmh flight speed in km/h, default 54.
-#' @param max.gsd maximum ground resolution
 #'
 #' @examples
 #' params = flight.parameters(
 #'   gsd = 4,
 #'   side.overlap = 0.8,
 #'   front.overlap = 0.8,
-#'   flight.speed.kmh = 54,
-#'   max.gsd = 0
+#'   flight.speed.kmh = 54
 #' )
 #'
 #' @export
 flight.parameters = function(
-  height = NA,
-  gsd = NA,
-  focal.length35 = 20,
-  image.width.px = 4000,
-  image.height.px = 3000,
-  side.overlap = 0.8,
-  front.overlap = 0.8,
-  flight.speed.kmh = 54,
-  max.gsd = 0) {
+    height = NA,
+    gsd = NA,
+    focal.length35 = 20,
+    image.width.px = 4000,
+    image.height.px = 3000,
+    side.overlap = 0.8,
+    front.overlap = 0.8,
+    flight.speed.kmh = 54) {
 
-  if (is.na(gsd) & is.na(height)) {
+  if (is.na(gsd) == is.na(height)) {
     stop("You must specify either gsd or height!")
   }
+
 
   image.diag.px = sqrt(image.width.px^2 + image.height.px^2)
   if (is.na(gsd)) {
     mult.factor = (height / focal.length35)
     diag.ground = DIAG_35MM * mult.factor
     gsd = diag.ground / image.diag.px * 100
-    if ((max.gsd != 0) && (gsd > max.gsd)) {
-      height = height * max.gsd / gsd
-      warning(paste0("GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height))
-      # Repeat as a Warning message because warnings are not always getting through
-      message("WARNING: GSD of ", gsd, " is above target of ", max.gsd, " so adjusting height down to ", height)
-      mult.factor = (height / focal.length35)
-      diag.ground = DIAG_35MM * mult.factor
-      gsd = diag.ground / image.diag.px * 100
-      message("Final GSD is ", gsd)
-    }
     groundWidth = image.width.px * gsd / 100
   } else {
     groundWidth = image.width.px * gsd / 100
@@ -450,25 +402,18 @@ flight.parameters = function(
   groundAllowedOffset = groundHeight - groundHeightOverlap
   photoInterval = groundAllowedOffset / flightSpeedMs
   if (photoInterval < MIN_PHOTO_INTERVAL) {
-    photoInterval = MIN_PHOTO_INTERVAL
-    flightSpeedMs = groundAllowedOffset / photoInterval
-    flight.speed.kmh = flightSpeedMs * 3.6
-    warning(paste0("Speed had to be lowered because frequency of photos would be too high
-        New speed: ", flight.speed.kmh, " km/h"))
-    # Repeat as a Warning message because warnings are not always getting through
-    message("WARNING: Speed had to be lowered because frequency of photos would be too high
-        New speed: ", flight.speed.kmh, " km/h")
-  } else if ((photoInterval %% .1) > 1e-4) {
-    # Allow 0.1s resolution because integer seconds blocks useful drone speeds
-    photoInterval = ceiling(photoInterval * 10) / 10
+    photoInterval = 2
     flightSpeedMs = groundAllowedOffset / photoInterval
     flight.speed.kmh = flightSpeedMs*3.6
-    warning(paste0("Speed lowered to ", flight.speed.kmh, " km/h to round up photo interval time
-                   to ", photoInterval, " seconds"))
-    # Repeat as a Warning message because warnings are not always getting through
-    message("WARNING: Speed lowered to ", flight.speed.kmh, " km/h to round up photo interval
-            time to ", photoInterval, " seconds")
+    warning(paste0("Speed had to be lowered because frequency of photos would be too high
+  New speed: ", flight.speed.kmh, "km/h"))
+  } else if ((photoInterval %% 1) > 1e-4) {
+    photoInterval = ceiling(photoInterval)
+    flightSpeedMs = groundAllowedOffset / photoInterval
+    flight.speed.kmh = flightSpeedMs*3.6
+    warning(paste0("Speed lowered to ", flight.speed.kmh, "km/h to round up photo interval time\n"))
   }
+
   params = methods::new("Flight Parameters")
   params@height = height
   params@gsd = gsd
@@ -482,11 +427,5 @@ flight.parameters = function(
   return (params)
 }
 
-# # Example
-# #
-# (params = flight.parameters(
-#   gsd=5,
-#   flight.speed.kmh=52,
-#   side.overlap = 0.8, #mudar para overlapFront
-#   front.overlap = 0.8 #mudar para overpSide
-# ))
+f <- list.files(path = "mytest", pattern = ".csv", full.names = TRUE)
+unlink(f)

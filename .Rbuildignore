@@ -3,3 +3,4 @@
 ^\.travis\.yml$
 ^oledlg\.dll$
 ^README.md$
+^mytest$

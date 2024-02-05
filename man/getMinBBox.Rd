@@ -12,6 +12,6 @@ bounding box.}
 }
 \description{
 Calculates the minimum oriented bounding box using the
-rotating claipers algorithm.
+rotating calipers algorithm.
 Credits go to Daniel Wollschlaeger <https://github.com/ramnathv>
 }
