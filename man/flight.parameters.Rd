@@ -12,7 +12,8 @@ flight.parameters(
   image.height.px = 3000,
   side.overlap = 0.8,
   front.overlap = 0.8,
-  flight.speed.kmh = 54
+  flight.speed.kmh = 54,
+  max.gsd = 0
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ flight.parameters(
 \item{front.overlap}{desired height overlap between photos, default 0.8}
 
 \item{flight.speed.kmh}{flight speed in km/h, default 54.}
+
+\item{max.gsd}{maximum ground resolution}
 }
 \description{
 This function will calculate the flight parameters by providing the camera settings
@@ -41,7 +44,8 @@ params = flight.parameters(
   gsd = 4,
   side.overlap = 0.8,
   front.overlap = 0.8,
-  flight.speed.kmh = 54
+  flight.speed.kmh = 54,
+  max.gsd = 0
 )
 
 }

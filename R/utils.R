@@ -217,6 +217,78 @@ getAngles = function(waypoints) {
   angles
 }
 
+# ---------------------------------------------------------------------------------------------
+# from https://github.com/caiohamamura/flightplanning-R/pull/4/commits/1b43add396c8ed9020c1f06863d4e7c8aef7355d
+# Calculate distance in meters between two points
+#' @param long1 longitude of the first point
+#' @param lat1 latitude of the 1st point
+#' @param long2 longitude of the 2nd point
+#' @param lat2 latitude of the 2nd point
+earth.dist <- function (long1, lat1, long2, lat2)
+{
+  rad <- pi/180
+  a1 <- lat1 * rad
+  a2 <- long1 * rad
+  b1 <- lat2 * rad
+  b2 <- long2 * rad
+  dlon <- b2 - a2
+  dlat <- b1 - a1
+  a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+  c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+  R <- 6378.145
+  d <- R * c
+  return(d * 1000)
+}
+
+# ---------------------------------------------------------------------------------------------
+#' Function to print flight plan summary
+#'
+#' This function will print messages with flight plan parameters,
+#' like flight time, photo interval
+#'
+#' @rdname flight.summary
+#'
+#' @param flight.params Flight Parameters. parameters calculated from flight.parameters()
+#'
+#' @examples
+#'
+#' flight.params = flightplanning::flight.parameters(
+#'   gsd = 4,
+#'   side.overlap = 0.8,
+#'   front.overlap = 0.8,
+#'   flight.speed.kmh = 54
+#' )
+#' plansummary = flight.summary(flight.params)
+#'
+#' @export
+flight.summary = function(flight.params) {
+  if(inherits(flight.params, "Flight Parameters")) {
+    message("#####################")
+    message("## Flight settings ## ")
+    message("#####################")
+    message("Min shutter speed: ", appendLF = FALSE)
+    message(flight.params@minimum.shutter.speed)
+    message("Photo interval:    ", appendLF = FALSE)
+    message(flight.params@photo.interval, appendLF = FALSE)
+    message(" s")
+    message("Photo distance:    ", appendLF = FALSE)
+    message(flight.params@photo.interval * flight.params@flight.speed.kmh / 3.6, appendLF = FALSE)
+    message(" m")
+    message("Flight speed:      ", appendLF = FALSE)
+    message(round(flight.params@flight.speed.kmh, 4), appendLF = FALSE)
+    message(" km/h")
+    message("Total number of waypoints: ", appendLF = FALSE)
+    message(flight.params@number.of.waypoints)
+    message("Flight lines angle: ", appendLF = FALSE)
+    message(round(flight.params@alpha, 4))
+    message('Total flight time: ', appendLF = FALSE)
+    message(round(flight.params@total.flight.time, 4))
+  } else {
+    message(paste("Seems", flight.params, "are not of class \"Flight Parameters\""))
+  }
+}
+
+# ---------------------------------------------------------------------------------------------
 #' Class for Flight Parameters
 setClass("Flight Parameters",
          slots = c(
@@ -227,7 +299,10 @@ setClass("Flight Parameters",
            height                = "numeric",
            ground.height         = "numeric",
            minimum.shutter.speed = "character",
-           photo.interval        = "numeric"
+           photo.interval        = "numeric",
+           number.of.waypoints   = "numeric",
+           alpha                 = "numeric",
+           total.flight.time     = "numeric"
          ),
          prototype = list(
            flight.line.distance  = NA_real_,
@@ -237,6 +312,9 @@ setClass("Flight Parameters",
            ground.height         = NA_real_,
            height                = NA_real_,
            minimum.shutter.speed = NA_character_,
-           photo.interval        = NA_real_
+           photo.interval        = NA_real_,
+           number.of.waypoints   = NA_real_,
+           alpha                 = NA_real_,
+           total.flight.time     = NA_real_
          )
 )
